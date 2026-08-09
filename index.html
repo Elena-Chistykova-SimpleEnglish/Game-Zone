@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Play Zone — игровая библиотека</title>
+    <style>
+      :root {
+        --ink: #080808;
+        --paper: #f7f3ea;
+        --pink: #ff0a8a;
+        --yellow: #ffd218;
+        --blue: #086cff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Impact, "Arial Narrow", Arial, sans-serif;
+        background-image: radial-gradient(#111 1px, transparent 1px);
+        background-size: 12px 12px;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+      }
+      .top {
+        height: 105px;
+        padding: 0 5vw;
+        background: #f7f3ea;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo {
+        background: #080808;
+        color: #fff;
+        padding: 13px 28px;
+        transform: rotate(-3deg);
+        font-size: 31px;
+        line-height: 0.82;
+        text-align: center;
+        filter: drop-shadow(5px 5px 0 #ff0a8a);
+      }
+      .logo span {
+        display: block;
+        color: var(--yellow);
+      }
+      nav {
+        display: flex;
+        gap: 40px;
+        text-transform: uppercase;
+      }
+      nav a {
+        color: #080808;
+        text-decoration: none;
+        font-size: 18px;
+      }
+      nav a:first-child {
+        color: var(--pink);
+        border-bottom: 5px solid;
+      }
+      .badge {
+        background: #080808;
+        color: white;
+        padding: 12px 22px;
+        transform: rotate(-2deg);
+      }
+      .badge b {
+        color: var(--yellow);
+      }
+      .hero {
+        text-align: center;
+        padding: 25px 15px 35px;
+        overflow: hidden;
+        background: linear-gradient(
+          115deg,
+          var(--yellow) 0 7%,
+          transparent 7% 80%,
+          var(--pink) 80%
+        );
+      }
+      .hero small {
+        letter-spacing: 5px;
+      }
+      .hero h1 {
+        font-size: clamp(80px, 11vw, 155px);
+        line-height: 0.85;
+        margin: 10px 0;
+        transform: skew(-8deg);
+        text-shadow:
+          5px 5px #fff,
+          9px 9px #080808;
+      }
+      .hero h1 span {
+        color: var(--pink);
+      }
+      .hero p {
+        display: inline-block;
+        background: #080808;
+        color: #fff;
+        padding: 8px 24px;
+        transform: skew(-6deg);
+        text-transform: uppercase;
+      }
+      .cards {
+        max-width: 1350px;
+        margin: auto;
+        background: var(--paper);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 38px;
+        padding: 45px 38px 80px;
+      }
+      .card {
+        --accent: #ff0a8a;
+        background: #080808;
+        border: 8px solid white;
+        outline: 4px solid #080808;
+        box-shadow: 12px 14px var(--accent);
+        transform: rotate(-1deg);
+        transition: 0.2s;
+      }
+      .card:nth-child(2) {
+        --accent: #ffd218;
+        transform: rotate(1deg) translateY(16px);
+      }
+      .card:nth-child(3) {
+        --accent: #086cff;
+      }
+      .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 16px 20px var(--accent);
+      }
+      .cover {
+        display: block;
+        border: 0;
+        padding: 0;
+        width: 100%;
+        aspect-ratio: 4/4.7;
+        overflow: hidden;
+        background: #ddd;
+      }
+      .cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        transition: 0.3s;
+      }
+      .card:hover img {
+        transform: scale(1.04);
+      }
+      .copy {
+        text-align: center;
+        padding: 18px 20px 24px;
+        color: white;
+      }
+      .genre {
+        display: inline-block;
+        margin: 0;
+        background: var(--accent);
+        color: #080808;
+        padding: 5px 18px;
+        text-transform: uppercase;
+        transform: skew(-8deg);
+      }
+      h2 {
+        font-size: clamp(36px, 4vw, 58px);
+        font-style: italic;
+        text-transform: uppercase;
+        line-height: 0.9;
+        margin: 15px 0 20px;
+      }
+      .play {
+        border: 0;
+        background: white;
+        color: var(--accent);
+        font-size: 27px;
+        padding: 12px 38px;
+        min-width: 70%;
+        clip-path: polygon(5% 0, 95% 4%, 100% 50%, 94% 100%, 4% 95%, 0 48%);
+      }
+      .play:hover {
+        background: var(--accent);
+        color: #080808;
+      }
+      .modal {
+        position: fixed;
+        z-index: 10;
+        inset: 0;
+        background: #090909;
+        display: none;
+        flex-direction: column;
+      }
+      .modal.open {
+        display: flex;
+      }
+      .bar {
+        height: 70px;
+        background: var(--paper);
+        border-bottom: 7px solid var(--pink);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 25px;
+        font-size: 28px;
+        text-transform: uppercase;
+      }
+      .bar button {
+        width: 45px;
+        height: 45px;
+        border: 0;
+        background: #080808;
+        color: white;
+        font-size: 34px;
+      }
+      .game {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+        color: white;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      }
+      .game.on {
+        display: flex;
+      }
+      .hud {
+        position: absolute;
+        top: 25px;
+        left: 30px;
+        font-size: 24px;
+      }
+      .hud b {
+        color: var(--yellow);
+        font-size: 35px;
+      }
+      .ninja {
+        background: linear-gradient(#371052 0 55%, #090412 55%);
+      }
+      .road {
+        position: absolute;
+        left: 10%;
+        right: 10%;
+        bottom: 0;
+        height: 45%;
+        clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+        background: repeating-linear-gradient(
+          90deg,
+          #111 0 48%,
+          #ff0a8a 49% 51%,
+          #111 52%
+        );
+      }
+      #runner {
+        position: absolute;
+        bottom: 28%;
+        font-size: 75px;
+        z-index: 2;
+        transition: 0.15s;
+      }
+      .controls {
+        position: absolute;
+        z-index: 3;
+        bottom: 25px;
+        display: flex;
+        gap: 12px;
+      }
+      .controls button,
+      .gas {
+        border: 4px solid white;
+        background: var(--pink);
+        color: white;
+        padding: 10px 28px;
+        font-size: 22px;
+        box-shadow: 5px 5px #080808;
+      }
+      .controls .start {
+        background: var(--yellow);
+        color: #080808;
+      }
+      .star {
+        position: absolute;
+        color: var(--yellow);
+        font-size: 42px;
+        animation: fall 2s linear infinite;
+      }
+      @keyframes fall {
+        from {
+          top: 22%;
+        }
+        to {
+          top: 75%;
+          transform: scale(2);
+        }
+      }
+      .mix {
+        background: radial-gradient(circle at 50% 35%, #2844a4, #110c36 65%);
+      }
+      .monster {
+        font-size: 150px;
+      }
+      .mix p {
+        font-size: 28px;
+        text-transform: uppercase;
+        margin: 5px;
+      }
+      .target {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .target i {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 4px solid white;
+      }
+      .bottles {
+        display: flex;
+        gap: 25px;
+        margin-top: 20px;
+      }
+      .bottles button {
+        font-size: 70px;
+        width: 105px;
+        height: 115px;
+        border: 4px solid white;
+        background: #111;
+      }
+      .race {
+        background: linear-gradient(#0969cc 0 58%, #1b1b1b 58%);
+      }
+      .track {
+        position: absolute;
+        left: 5%;
+        right: 5%;
+        bottom: 22%;
+        height: 170px;
+        background: repeating-linear-gradient(
+          90deg,
+          #333 0 50px,
+          #222 50px 100px
+        );
+        border-block: 14px solid white;
+      }
+      .car {
+        position: absolute;
+        left: 1%;
+        bottom: 26px;
+        font-size: 70px;
+        transition: left 0.2s;
+      }
+      .finish {
+        position: absolute;
+        right: 2%;
+        font-size: 75px;
+      }
+      .speed {
+        text-align: center;
+        margin-top: -120px;
+        z-index: 2;
+      }
+      .speed b {
+        display: block;
+        color: var(--yellow);
+        font-size: 100px;
+        line-height: 1;
+        text-shadow: 5px 5px #080808;
+      }
+      .gas {
+        position: absolute;
+        bottom: 28px;
+        background: var(--blue);
+        z-index: 3;
+      }
+      .win {
+        position: absolute;
+        z-index: 5;
+        color: var(--yellow);
+        font-size: 65px;
+        text-shadow: 5px 5px #080808;
+        display: none;
+      }
+      footer {
+        background: #080808;
+        color: white;
+        padding: 28px;
+        text-align: center;
+      }
+      footer b {
+        color: var(--yellow);
+      }
+      @media (max-width: 850px) {
+        nav,
+        .badge {
+          display: none;
+        }
+        .top {
+          height: 85px;
+        }
+        .logo {
+          font-size: 24px;
+        }
+        .hero h1 {
+          font-size: 78px;
+        }
+        .cards {
+          grid-template-columns: 1fr;
+          max-width: 560px;
+          padding: 28px 28px 70px;
+          gap: 50px;
+        }
+        .card:nth-child(2) {
+          transform: rotate(1deg);
+        }
+        .bottles {
+          gap: 8px;
+        }
+        .bottles button {
+          width: 82px;
+          height: 92px;
+          font-size: 52px;
+        }
+        .monster {
+          font-size: 110px;
+        }
+        .bar {
+          font-size: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="logo">PLAY<span>ZONE</span></div>
+      <nav>
+        <a href="#">Главная</a><a href="#games">Игры</a
+        ><a href="#games">Коллекция</a>
+      </nav>
+      <div class="badge">★ LEVEL UP <b>TOGETHER!</b></div>
+    </header>
+    <section class="hero">
+      <small>ТВОЯ ИГРОВАЯ БИБЛИОТЕКА</small>
+      <h1>GAME <span>ON!</span></h1>
+      <p>Выбирай карточку и начинай играть</p>
+    </section>
+    <section class="cards" id="games">
+      <article class="card">
+        <button
+          class="cover"
+          onclick="location.href='public/ninja-time-quest.html'"
+        >
+          <img src="public/shadow-dash.png" alt="Ninja Time Quest" />
+        </button>
+        <div class="copy">
+          <p class="genre">✦ English Adventure</p>
+          <h2>Ninja Time Quest</h2>
+          <button
+            class="play"
+            onclick="location.href='public/ninja-time-quest.html'"
+          >
+            ▶ Играть
+          </button>
+        </div>
+      </article>
+      <article class="card">
+        <button
+          class="cover"
+          onclick="location.href='public/monster-verb-lab.html'"
+        >
+          <img src="public/monster-mix.png" alt="Monster Mix" />
+        </button>
+        <div class="copy">
+          <p class="genre">⚗ Puzzle</p>
+          <h2>Monster Verb Lab</h2>
+          <button
+            class="play"
+            onclick="location.href='public/monster-verb-lab.html'"
+          >
+            ▶ Играть
+          </button>
+        </div>
+      </article>
+      <article class="card">
+        <button class="cover" onclick="location.href='public/echo-rift.html'">
+          <img src="public/echo-rift-environment.png" alt="Echo Rift" />
+        </button>
+        <div class="copy">
+          <p class="genre">⌖ Sentence FPS</p>
+          <h2>Echo Rift</h2>
+          <button class="play" onclick="location.href='public/echo-rift.html'">
+            ▶ Играть
+          </button>
+        </div>
+      </article>
+    </section>
+    <footer><b>PLAY ZONE</b> — твоя библиотека приключений</footer>
+    <div class="modal" id="modal">
+      <div class="bar">
+        <b id="title">PLAY ZONE</b><button onclick="closeGame()">×</button>
+      </div>
+      <section class="game ninja" id="ninja">
+        <div class="hud">ОЧКИ <b id="nscore">0</b></div>
+        <div class="road"></div>
+        <div id="runner">🥷</div>
+        <i class="star" style="left: 24%">✦</i
+        ><i class="star" style="left: 73%; animation-delay: 1s">✦</i>
+        <div class="controls">
+          <button onclick="move(-1)">←</button
+          ><button class="start" id="runbtn" onclick="toggleRun()">СТАРТ</button
+          ><button onclick="move(1)">→</button>
+        </div>
+      </section>
+      <section class="game mix" id="mix">
+        <div class="hud">СМЕСИ <b id="mscore">0</b></div>
+        <div class="monster">👾</div>
+        <p id="msg">Смешай нужный цвет!</p>
+        <div class="target">ЦЕЛЬ <i id="target"></i></div>
+        <div class="bottles">
+          <button style="color: #ff0a8a" onclick="pick(0)">⚗</button
+          ><button style="color: #ffd218" onclick="pick(1)">⚗</button
+          ><button style="color: #086cff" onclick="pick(2)">⚗</button>
+        </div>
+      </section>
+      <section class="game race" id="race">
+        <div class="hud">ТРАССА <b id="distance">0%</b></div>
+        <div class="track">
+          <div class="car" id="car">🏎️</div>
+          <div class="finish">▥</div>
+        </div>
+        <div class="speed"><b id="speed">0</b>КМ/Ч</div>
+        <button
+          class="gas"
+          onpointerdown="gas(true)"
+          onpointerup="gas(false)"
+          onpointerleave="gas(false)"
+        >
+          ЖМИ ГАЗ!
+        </button>
+        <div class="win" id="win">ФИНИШ! 🏁</div>
+      </section>
+    </div>
+    <script>
+      const names = {
+        ninja: "Shadow Dash",
+        mix: "Monster Mix",
+        race: "Turbo League",
+      };
+      let running = false,
+        lane = 1,
+        nscore = 0,
+        runTimer = null;
+      const colors = ["#ff0a8a", "#ffd218", "#086cff"];
+      let goal = 0,
+        mscore = 0,
+        velocity = 0,
+        dist = 0,
+        raceTimer = null;
+      function openGame(id) {
+        document.getElementById("modal").classList.add("open");
+        document.getElementById("title").textContent = names[id];
+        document
+          .querySelectorAll(".game")
+          .forEach((x) => x.classList.remove("on"));
+        document.getElementById(id).classList.add("on");
+      }
+      function closeGame() {
+        document.getElementById("modal").classList.remove("open");
+        running = false;
+        clearInterval(runTimer);
+        document.getElementById("runbtn").textContent = "СТАРТ";
+        gas(false);
+      }
+      function move(d) {
+        lane = Math.max(0, Math.min(2, lane + d));
+        document.getElementById("runner").style.left = [22, 48, 74][lane] + "%";
+      }
+      function toggleRun() {
+        running = !running;
+        document.getElementById("runbtn").textContent = running
+          ? "ПАУЗА"
+          : "СТАРТ";
+        clearInterval(runTimer);
+        if (running)
+          runTimer = setInterval(() => {
+            nscore += 10;
+            document.getElementById("nscore").textContent = nscore;
+          }, 500);
+      }
+      function newGoal() {
+        goal = Math.floor(Math.random() * 3);
+        document.getElementById("target").style.background = colors[goal];
+      }
+      newGoal();
+      function pick(i) {
+        if (i === goal) {
+          mscore++;
+          document.getElementById("mscore").textContent = mscore;
+          document.getElementById("msg").textContent = "БАМ! ИДЕАЛЬНАЯ СМЕСЬ!";
+          newGoal();
+        } else
+          document.getElementById("msg").textContent =
+            "УПС! ПОПРОБУЙ ДРУГОЙ ФЛАКОН";
+      }
+      function gas(on) {
+        velocity = on ? 220 : 0;
+        document.getElementById("speed").textContent = velocity;
+        clearInterval(raceTimer);
+        if (on)
+          raceTimer = setInterval(() => {
+            dist = Math.min(100, dist + 1.8);
+            document.getElementById("distance").textContent =
+              Math.round(dist) + "%";
+            document.getElementById("car").style.left =
+              Math.min(88, dist * 0.88) + "%";
+            if (dist >= 100) {
+              document.getElementById("win").style.display = "block";
+              gas(false);
+            }
+          }, 100);
+      }
+      addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeGame();
+        if (e.key === "ArrowLeft") move(-1);
+        if (e.key === "ArrowRight") move(1);
+      });
+      move(0);
+    </script>
+  </body>
+</html>

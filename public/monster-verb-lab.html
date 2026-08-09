@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>Monster Verb Lab</title>
+    <style>
+      :root {
+        --cyan: #28e7ff;
+        --pink: #ff1b8d;
+        --yellow: #ffdb12;
+        --lime: #a9f928;
+        --ink: #07101c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #050817;
+        color: white;
+        font-family: Impact, "Arial Narrow", Arial, sans-serif;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .lab {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: url("monster-lab-background.png") center/cover;
+      }
+      .lab:after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(#02081755, transparent 30%, #03051266);
+        pointer-events: none;
+      }
+      .screen {
+        position: absolute;
+        z-index: 30;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background:
+          linear-gradient(100deg, #051020ed, #190936dd),
+          url("monster-lab-background.png") center/cover;
+      }
+      .screen.on {
+        display: grid;
+      }
+      .panel {
+        width: min(900px, 96vw);
+        max-height: 94vh;
+        overflow: auto;
+        text-align: center;
+        background: #071326ef;
+        border: 5px solid #fff;
+        outline: 5px solid #12182a;
+        padding: clamp(18px, 4vw, 42px);
+        box-shadow: 12px 12px var(--pink);
+      }
+      h1 {
+        font: italic 900 clamp(55px, 9vw, 118px) / 0.75 Impact;
+        margin: 15px;
+        text-shadow:
+          6px 6px #02040c,
+          10px 10px var(--pink);
+      }
+      h1 span {
+        display: block;
+        color: var(--yellow);
+        font-size: 0.42em;
+        letter-spacing: 0.12em;
+        margin-top: 18px;
+      }
+      h2 {
+        font-size: 42px;
+        margin: 8px;
+      }
+      .tag {
+        font: 700 19px Arial;
+        color: #c9f9ff;
+      }
+      .btn {
+        border: 4px solid white;
+        background: #11192b;
+        color: white;
+        padding: 12px 25px;
+        margin: 8px;
+        min-width: 190px;
+        cursor: pointer;
+        transform: skew(-5deg);
+        box-shadow: 6px 6px #000;
+      }
+      .btn.primary {
+        background: var(--pink);
+      }
+      .btn.yellow {
+        background: var(--yellow);
+        color: #111;
+      }
+      .btn:hover {
+        filter: brightness(1.25);
+      }
+      .brief {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 20px;
+        text-align: left;
+        font-family: Arial;
+      }
+      .brief b {
+        color: var(--yellow);
+      }
+      .hud {
+        position: absolute;
+        z-index: 10;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 82px;
+        background: #050916e8;
+        border-bottom: 4px solid var(--cyan);
+        display: none;
+        align-items: center;
+        gap: 23px;
+        padding: 8px 18px;
+      }
+      .hud.on {
+        display: flex;
+      }
+      .shields {
+        font-size: 28px;
+        color: var(--cyan);
+      }
+      .stat small {
+        display: block;
+        color: #8ceeff;
+        font: 11px Arial;
+        letter-spacing: 0.15em;
+      }
+      .stat b {
+        font-size: 27px;
+        color: var(--yellow);
+      }
+      .timer {
+        margin-left: auto;
+        font: 32px monospace;
+        color: var(--cyan);
+      }
+      .hud button {
+        width: 43px;
+        height: 42px;
+        border: 2px solid white;
+        background: #10182a;
+        color: white;
+      }
+      .order {
+        position: absolute;
+        z-index: 9;
+        top: 94px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(640px, 62vw);
+        background: #06162de8;
+        border: 3px solid #30e8ff;
+        padding: 10px;
+        text-align: center;
+        box-shadow: 0 0 25px #22dfff55;
+      }
+      .order small {
+        color: #73eaff;
+      }
+      .order b {
+        font:
+          900 30px Arial,
+          sans-serif;
+        letter-spacing: 0.12em;
+      }
+      .slots {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 8px;
+      }
+      .slot {
+        width: 42px;
+        height: 43px;
+        border: 2px solid #78efff;
+        background: #0e2237;
+        color: #fff;
+        font:
+          900 24px Arial,
+          sans-serif;
+        cursor: pointer;
+      }
+      .slot.filled {
+        background: #144e63;
+      }
+      .reactor {
+        position: absolute;
+        z-index: 4;
+        left: 50%;
+        top: 47%;
+        transform: translate(-50%, -50%);
+        width: 31vw;
+        height: 48vh;
+        border-radius: 46%;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      .liquid {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -15%;
+        height: 50%;
+        background: linear-gradient(#fff9, var(--liquid, var(--yellow)));
+        border-radius: 45% 45% 0 0;
+        filter: drop-shadow(0 0 20px var(--liquid, var(--yellow)));
+        transition: 1s;
+      }
+      .liquid:before {
+        content: "";
+        position: absolute;
+        inset: -15px 0;
+        background: radial-gradient(
+            circle at 20% 20%,
+            #fff 0 4px,
+            transparent 5px
+          ),
+          radial-gradient(circle at 70% 40%, #fff9 0 7px, transparent 8px);
+        background-size: 80px 90px;
+        animation: bubble 2.4s linear infinite;
+      }
+      @keyframes bubble {
+        to {
+          transform: translateY(-90px);
+        }
+      }
+      .reactor.shake {
+        animation: shake 0.16s infinite;
+      }
+      .monster {
+        position: absolute;
+        z-index: 6;
+        left: 50%;
+        top: 43%;
+        width: 210px;
+        height: 230px;
+        transform: translate(-50%, -50%);
+        background: url("monster-collection.png");
+        background-size: 400% 200%;
+        background-position: var(--monster-pos, 0% 0%);
+        opacity: 0;
+        transition: 0.5s;
+        filter: drop-shadow(0 0 15px #fff7);
+      }
+      .monster.show {
+        opacity: 1;
+        animation: pop 0.55s;
+      }
+      .monster.glitch {
+        background-position: 33.333% 0%;
+        animation: glitch 0.25s infinite;
+      }
+      .zog {
+        position: absolute;
+        z-index: 8;
+        right: 4%;
+        bottom: 11%;
+        width: 230px;
+        height: 300px;
+        background: url("monster-lab-sprites.png");
+        background-size: 400% 200%;
+        background-position: 0 0;
+        filter: drop-shadow(8px 8px #0008);
+        animation: bob 2.1s ease-in-out infinite;
+      }
+      .zog.worry {
+        background-position: 33.333% 0;
+      }
+      .flasks {
+        position: absolute;
+        z-index: 7;
+        left: 2%;
+        top: 25%;
+        display: flex;
+        gap: 2px;
+      }
+      .booster {
+        border: 0;
+        background: none;
+        color: #fff;
+        cursor: pointer;
+        position: relative;
+        width: 120px;
+        padding: 0;
+      }
+      .booster small {
+        display: block;
+        background: #061323dd;
+        border: 2px solid #fff;
+        padding: 5px;
+        font:
+          800 11px Arial,
+          sans-serif;
+      }
+      .booster.used {
+        animation: boosterGone 0.65s forwards;
+        pointer-events: none;
+      }
+      @keyframes boosterGone {
+        50% {
+          filter: brightness(2);
+          transform: scale(1.2) rotate(8deg);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-80px) scale(0.2);
+        }
+      }
+      .flask {
+        display: block;
+        width: 120px;
+        height: 160px;
+        background: url("monster-lab-sprites.png");
+        background-size: 400% 200%;
+        animation: bob 2s ease-in-out infinite;
+      }
+      .booster:nth-child(1) .flask {
+        background-position: 0 100%;
+      }
+      .booster:nth-child(2) .flask {
+        background-position: 33.333% 100%;
+        animation-delay: 0.3s;
+      }
+      .booster:nth-child(3) .flask {
+        background-position: 66.667% 100%;
+        animation-delay: 0.6s;
+      }
+      @keyframes bob {
+        50% {
+          transform: translateY(-8px) rotate(1deg);
+        }
+      }
+      @keyframes pop {
+        from {
+          transform: translate(-50%, -50%) scale(0.1) rotate(-20deg);
+        }
+      }
+      @keyframes glitch {
+        50% {
+          transform: translate(-48%, -50%) skew(5deg);
+          filter: hue-rotate(70deg);
+        }
+      }
+      @keyframes shake {
+        50% {
+          transform: translate(-49%, -50%) rotate(0.6deg);
+        }
+      }
+      .controls {
+        position: absolute;
+        z-index: 8;
+        right: 2%;
+        top: 23%;
+        width: 220px;
+        background: #071426e8;
+        border: 3px solid #fff;
+        padding: 11px;
+      }
+      .gauge {
+        margin: 8px 0;
+        text-align: left;
+        font-size: 12px;
+      }
+      .gauge input {
+        width: 100%;
+        accent-color: var(--pink);
+      }
+      .stability {
+        height: 15px;
+        border: 2px solid white;
+        background: #172236;
+      }
+      .stability i {
+        display: block;
+        height: 100%;
+        width: 75%;
+        background: linear-gradient(90deg, #ff334f, #ffdb12, #70ef78);
+      }
+      .phasebtn {
+        width: 100%;
+        padding: 11px;
+        background: var(--pink);
+        color: white;
+        border: 3px solid white;
+        margin-top: 8px;
+        cursor: pointer;
+      }
+      .conveyor {
+        position: absolute;
+        z-index: 9;
+        left: 6%;
+        right: 6%;
+        bottom: 3%;
+        height: 116px;
+        border: 5px solid #1b2333;
+        background: repeating-linear-gradient(
+          100deg,
+          #222b3a 0 42px,
+          #111827 43px 78px
+        );
+        overflow: hidden;
+        box-shadow: inset 0 0 25px #000;
+      }
+      .capsules {
+        display: flex;
+        position: absolute;
+        left: 0;
+        top: 15px;
+        gap: 14px;
+        animation: belt 13s linear infinite;
+      }
+      .capsule {
+        min-width: 67px;
+        height: 70px;
+        border-radius: 35px;
+        border: 4px solid white;
+        background: radial-gradient(
+          circle at 30% 20%,
+          white,
+          var(--cyan) 35%,
+          #087289
+        );
+        color: #07101c;
+        font:
+          900 25px Arial,
+          sans-serif;
+        cursor: pointer;
+        box-shadow: 0 0 15px var(--cyan);
+        flex: none;
+      }
+      .capsule:nth-child(3n) {
+        background: radial-gradient(
+          circle at 30% 20%,
+          white,
+          var(--pink) 35%,
+          #8e0c55
+        );
+      }
+      .capsule:nth-child(3n + 1) {
+        background: radial-gradient(
+          circle at 30% 20%,
+          white,
+          var(--yellow) 35%,
+          #a57200
+        );
+      }
+      @keyframes belt {
+        to {
+          transform: translateX(-38%);
+        }
+      }
+      .claw {
+        position: absolute;
+        z-index: 10;
+        width: 145px;
+        height: 165px;
+        left: 46%;
+        bottom: 103px;
+        background: url("monster-lab-sprites.png");
+        background-size: 400% 200%;
+        background-position: 100% 100%;
+        pointer-events: none;
+        transition:
+          left 0.28s ease,
+          bottom 0.28s ease,
+          transform 0.18s;
+      }
+      .claw.grab {
+        transform: translateY(18px) scale(0.92);
+      }
+      .collection-strip {
+        position: absolute;
+        z-index: 11;
+        left: 50%;
+        bottom: 126px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 5px;
+        background: #061323cc;
+        border: 2px solid var(--cyan);
+        padding: 5px;
+      }
+      .collect-slot {
+        width: 48px;
+        height: 52px;
+        background-image: url("monster-collection.png");
+        background-size: 400% 200%;
+        background-position: var(--pos);
+        filter: brightness(0);
+        opacity: 0.35;
+        border: 1px dashed #9beeff;
+      }
+      .collect-slot.got {
+        filter: none;
+        opacity: 1;
+        animation: slotPop 0.6s;
+      }
+      @keyframes slotPop {
+        50% {
+          transform: scale(1.35);
+          filter: brightness(1.8);
+        }
+      }
+      .room-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 18px 0;
+        text-align: left;
+      }
+      .dossier {
+        background: #fff9e9;
+        color: #111;
+        border: 4px solid #111;
+        padding: 10px;
+        font:
+          14px/1.35 Arial,
+          sans-serif;
+        min-height: 220px;
+      }
+      .dossier .portrait {
+        height: 105px;
+        background-image: url("monster-collection.png");
+        background-size: 400% 200%;
+        background-position: var(--pos);
+        background-repeat: no-repeat;
+        filter: brightness(0);
+        opacity: 0.25;
+      }
+      .dossier.got .portrait {
+        filter: none;
+        opacity: 1;
+      }
+      .dossier h3 {
+        margin: 3px 0;
+        color: #c4116c;
+      }
+      .dossier b {
+        color: #09748b;
+      }
+      .rule-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+        margin-top: 12px;
+      }
+      .rule-card {
+        border: 3px solid #fff;
+        background: #101b31;
+        padding: 10px;
+        text-align: center;
+        font-family: Arial;
+      }
+      .rule-card strong {
+        display: block;
+        color: var(--yellow);
+        font-size: 17px;
+      }
+      .rule-card span {
+        display: block;
+        margin-top: 6px;
+        font-size: 13px;
+      }
+      .comicfx {
+        position: absolute;
+        z-index: 18;
+        left: 50%;
+        top: 48%;
+        transform: translate(-50%, -50%) rotate(-8deg);
+        font-size: 75px;
+        color: var(--yellow);
+        text-shadow: 6px 6px #000;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .comicfx.on {
+        animation: fx 0.8s;
+      }
+      @keyframes fx {
+        20%,
+        70% {
+          opacity: 1;
+          transform: translate(-50%, -65%) rotate(-8deg) scale(1.15);
+        }
+      }
+      .modal {
+        position: absolute;
+        z-index: 20;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: #030713bb;
+      }
+      .modal.on {
+        display: grid;
+      }
+      .resultbox {
+        background: #fff9e9;
+        color: #111;
+        border: 6px solid #111;
+        padding: 25px;
+        text-align: center;
+        max-width: 620px;
+        box-shadow: 12px 12px var(--pink);
+      }
+      .mixing {
+        display: none;
+        position: absolute;
+        z-index: 15;
+        inset: 85px 0 0;
+        background: #06101a22;
+        pointer-events: none;
+      }
+      .mixing.on {
+        display: block;
+      }
+      .mixing .controls {
+        pointer-events: auto;
+      }
+      .audio-panel {
+        display: grid;
+        grid-template-columns: 90px 1fr 45px;
+        gap: 8px;
+        align-items: center;
+        font-family: Arial;
+        margin: 12px;
+      }
+      .leader {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .leader td,
+      .leader th {
+        border-bottom: 1px solid #aaa;
+        padding: 6px;
+      }
+      @media (max-width: 850px), (pointer: coarse) {
+        .zog {
+          width: 145px;
+          height: 190px;
+          right: 0;
+        }
+        .flasks {
+          display: none;
+        }
+        .controls {
+          width: 170px;
+        }
+        .order {
+          width: 90vw;
+        }
+        .reactor {
+          width: 52vw;
+        }
+        .hud {
+          gap: 8px;
+        }
+        .stat small {
+          font-size: 8px;
+        }
+        .stat b {
+          font-size: 18px;
+        }
+        .conveyor {
+          left: 2%;
+          right: 2%;
+        }
+        .brief {
+          grid-template-columns: 1fr;
+        }
+        .monster {
+          width: 150px;
+          height: 170px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="lab" id="lab">
+      <div class="flasks" aria-label="One-use boosters">
+        <button class="booster" onclick="useBooster('double',this)">
+          <i class="flask"></i><small>×2 NEXT WORD</small>
+        </button>
+        <button class="booster" onclick="useBooster('time',this)">
+          <i class="flask"></i><small>+30 SECONDS</small>
+        </button>
+        <button class="booster" onclick="useBooster('shield',this)">
+          <i class="flask"></i><small>+1 SHIELD</small>
+        </button>
+      </div>
+      <div class="reactor" id="reactor"><i class="liquid" id="liquid"></i></div>
+      <i class="monster" id="monster"></i><i class="zog" id="zog"></i
+      ><i class="claw" id="claw"></i>
+      <div
+        class="collection-strip"
+        id="collectionStrip"
+        aria-label="Monster collection progress"
+      ></div>
+      <div class="comicfx" id="fx">FIZZ!</div>
+      <div class="hud" id="hud">
+        <div class="shields" id="shields">⬟ ⬟ ⬟</div>
+        <div class="stat"><small>SCORE</small><b id="score">0</b></div>
+        <div class="stat"><small>COMBO</small><b id="combo">×0</b></div>
+        <div class="stat"><small>REACTION</small><b id="progress">1/8</b></div>
+        <div class="timer" id="timer">02:30</div>
+        <button id="sound" onclick="toggleSound()">♫</button
+        ><button onclick="pauseGame()">Ⅱ</button>
+      </div>
+      <div class="order" id="order">
+        <small>VERB ORDER — BUILD THE PAST SIMPLE FORM</small><br /><b id="verb"
+          >DRINK</b
+        >
+        <div class="slots" id="slots"></div>
+      </div>
+      <div class="controls" id="controls">
+        <div class="gauge">
+          TEMPERATURE
+          <input id="temp" type="range" min="0" max="100" value="50" />
+        </div>
+        <div class="gauge">
+          PRESSURE
+          <input id="pressure" type="range" min="0" max="100" value="50" />
+        </div>
+        <div class="gauge">
+          STABILITY
+          <div class="stability"><i id="stable"></i></div>
+        </div>
+        <button class="phasebtn" id="pump" onclick="pump()">PUMP</button
+        ><button class="phasebtn" id="react" onclick="startReaction()">
+          START REACTION</button
+        ><button class="phasebtn" onclick="releaseSteam()">
+          RELEASE STEAM
+        </button>
+      </div>
+      <div class="conveyor"><div class="capsules" id="capsules"></div></div>
+      <div class="mixing" id="mixing"></div>
+      <section class="screen on" id="start">
+        <div class="panel">
+          <p>IRREGULAR VERB REACTOR</p>
+          <h1>MONSTER<span>VERB LAB</span></h1>
+          <p class="tag">Build it. Mix it. Bring it to life!</p>
+          <button class="btn primary" onclick="showBrief()">
+            ENTER THE LAB</button
+          ><button class="btn" onclick="showBoard()">COLLECTION</button
+          ><button class="btn" onclick="location.href='../index.html'">
+            BACK TO PLAY ZONE
+          </button>
+        </div>
+      </section>
+      <section class="screen" id="brief">
+        <div class="panel">
+          <h2>LAB SAFETY BRIEFING</h2>
+          <div class="brief">
+            <div>
+              <p><b>1. READ</b> the infinitive at the top.</p>
+              <p>
+                <b>2. BUILD</b> its Past Simple form. Catch moving letter
+                capsules. You may fill any slot in any order.
+              </p>
+              <p>
+                <b>3. CHECK</b> the whole word with START REACTION. The lab
+                gives no hints before checking.
+              </p>
+              <p><b>4. STABILIZE</b> a correct reaction with these controls:</p>
+              <div class="rule-cards">
+                <div class="rule-card">
+                  <strong>START REACTION</strong
+                  ><span>Checks the whole word after every slot is full.</span>
+                </div>
+                <div class="rule-card">
+                  <strong>PUMP ×3</strong
+                  ><span>Adds pressure and energy. Press it three times.</span>
+                </div>
+                <div class="rule-card">
+                  <strong>RELEASE STEAM</strong
+                  ><span>Lowers pressure when the gauge is too high.</span>
+                </div>
+              </div>
+              <p>
+                Move <b>TEMPERATURE</b> and <b>PRESSURE</b> near the middle.
+                Keep <b>STABILITY</b> above 60%.
+              </p>
+              <p>
+                A wrong whole word removes one shield. After three failed
+                checks, the answer and example appear, but no monster is
+                collected.
+              </p>
+            </div>
+            <div>
+              <p><b>MOUSE / TOUCH</b> Catch capsules and controls</p>
+              <p><b>ARROWS</b> Move claw</p>
+              <p><b>SPACE</b> Grab capsule</p>
+              <p><b>BACKSPACE</b> Remove last capsule</p>
+              <p><b>W/S</b> Temperature · <b>A/D</b> Pressure</p>
+              <p><b>ENTER</b> Start reaction · <b>ESC</b> Pause</p>
+            </div>
+          </div>
+          <button class="btn primary" onclick="startGame()">
+            START EXPERIMENT</button
+          ><button class="btn yellow" onclick="showMonsterRoom()">
+            MONSTER ROOM
+          </button>
+        </div>
+      </section>
+      <section class="screen" id="pause">
+        <div class="panel">
+          <h2>LAB PAUSED</h2>
+          <div class="audio-panel">
+            <label>MUSIC</label
+            ><input
+              id="musicVol"
+              type="range"
+              min="0"
+              max="100"
+              value="45"
+            /><output id="musicOut">45%</output><label>SFX</label
+            ><input
+              id="sfxVol"
+              type="range"
+              min="0"
+              max="100"
+              value="70"
+            /><output id="sfxOut">70%</output>
+          </div>
+          <button class="btn primary" onclick="resumeGame()">CONTINUE</button
+          ><button class="btn" onclick="quitGame()">EXIT LAB</button>
+        </div>
+      </section>
+      <section class="screen" id="finish">
+        <div class="panel">
+          <h2 id="finishTitle">LAB COMPLETE!</h2>
+          <p class="tag" id="finishText"></p>
+          <p>
+            SCORE <b id="finalScore"></b> · SAMPLES <b id="samples"></b>/8 ·
+            BEST COMBO <b id="bestCombo"></b>
+          </p>
+          <input id="name" maxlength="14" value="Scientist" /><button
+            class="btn primary"
+            onclick="saveReplay()"
+          >
+            SAVE & PLAY AGAIN</button
+          ><button class="btn" onclick="location.href='../index.html'">
+            BACK TO PLAY ZONE
+          </button>
+        </div>
+      </section>
+      <section class="screen" id="boardScreen">
+        <div class="panel">
+          <h2>MONSTER COLLECTION</h2>
+          <div id="board"></div>
+          <button class="btn primary" onclick="showScreen('start')">
+            BACK
+          </button>
+        </div>
+      </section>
+      <section class="screen" id="monsterRoom">
+        <div class="panel">
+          <h2>MONSTER ROOM</h2>
+          <p class="tag">
+            Make stable reactions to unlock every little lab friend.
+          </p>
+          <div class="room-grid" id="roomGrid"></div>
+          <button class="btn primary" onclick="showBrief()">
+            BACK TO RULES
+          </button>
+        </div>
+      </section>
+      <div class="modal" id="reveal">
+        <div class="resultbox">
+          <h2 id="revealTitle"></h2>
+          <p id="answer"></p>
+          <p id="example"></p>
+          <button class="btn primary" id="next" onclick="nextRound()">
+            NEXT REACTION
+          </button>
+        </div>
+      </div>
+    </main>
+    <script>
+      const VERBS = [
+        ["get", "got", "Ava got a blue flask."],
+        ["sit", "sat", "Zog sat near the reactor."],
+        ["run", "ran", "The monster ran to the door."],
+        ["drink", "drank", "Ben drank some juice."],
+        ["sing", "sang", "Zog sang a funny song."],
+        ["swim", "swam", "They swam in the lake."],
+        ["give", "gave", "Leo gave me a key."],
+        ["take", "took", "Ava took the pink flask."],
+        ["drive", "drove", "We drove to the lab."],
+        ["ride", "rode", "She rode her bike."],
+        ["write", "wrote", "I wrote a short message."],
+        ["speak", "spoke", "Zog spoke to the robot."],
+        ["bring", "brought", "They brought a new machine."],
+        ["buy", "bought", "Leo bought new goggles."],
+        ["think", "thought", "Ben thought about the answer."],
+        ["leave", "left", "We left the lab at six."],
+        ["feel", "felt", "Zog felt very happy."],
+        ["sleep", "slept", "The monster slept all night."],
+        ["build", "built", "We built a small robot."],
+        ["understand", "understood", "The robot understood the order."],
+        ["go", "went", "We went to the lab."],
+        ["break", "broke", "The monster broke the machine."],
+        ["find", "found", "Leo found a secret key."],
+        ["wear", "wore", "Zog wore his new goggles."],
+      ];
+      const MONSTERS = [
+        ["BUBI", 2, "Bubi likes water games. He can make round blue bubbles."],
+        [
+          "PIX",
+          4,
+          "Pix likes music. She can dance and make funny pink lights.",
+        ],
+        ["SPARK", 1, "Spark likes sunny days. He can light a small dark room."],
+        [
+          "GLOOP",
+          6,
+          "Gloop likes green jelly. He can stretch and reach high shelves.",
+        ],
+        [
+          "MOMO",
+          8,
+          "Momo likes books and quiet rooms. She can fly with her long ears.",
+        ],
+        [
+          "ROCKY",
+          12,
+          "Rocky likes building things. He can carry heavy lab boxes.",
+        ],
+        [
+          "DROP",
+          5,
+          "Drop likes swimming. She can clean the glass tubes with water.",
+        ],
+        [
+          "PUFF",
+          3,
+          "Puff likes warm soup. He can make a little cloud of steam.",
+        ],
+      ];
+      const monsterPos = (i) =>
+        `${[0, 33.333, 66.667, 100][i % 4]}% ${i < 4 ? 0 : 100}%`;
+      const $ = (id) => document.getElementById(id),
+        shuffle = (a) => [...a].sort(() => Math.random() - 0.5);
+      let state = "start",
+        rounds = [],
+        round = 0,
+        score = 0,
+        combo = 0,
+        bestCombo = 0,
+        samples = 0,
+        shields = 3,
+        slots = [],
+        caps = [],
+        time = 150,
+        timer = null,
+        phase = "assembly",
+        pumps = 0,
+        stability = 75,
+        clawX = 46,
+        doubleNext = false,
+        collected = new Set(
+          JSON.parse(localStorage.getItem("mvl-monsters") || "[]"),
+        ),
+        audio = null,
+        musicTimer = null,
+        sound = true,
+        musicVolume = +(localStorage.getItem("mvl-music") ?? 45) / 100,
+        sfxVolume = +(localStorage.getItem("mvl-sfx") ?? 70) / 100;
+      function showScreen(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((x) => x.classList.remove("on"));
+        let s = $(id);
+        if (s) s.classList.add("on");
+      }
+      function showBrief() {
+        showScreen("brief");
+      }
+      function startGame() {
+        initAudio();
+        rounds = shuffle(VERBS).slice(0, 8);
+        round = score = combo = bestCombo = samples = 0;
+        doubleNext = false;
+        document
+          .querySelectorAll(".booster")
+          .forEach((b) => b.classList.remove("used"));
+        time = 150;
+        state = "play";
+        showScreen("none");
+        $("hud").classList.add("on");
+        clearInterval(timer);
+        timer = setInterval(tick, 1000);
+        startMusic();
+        renderCollection();
+        loadRound();
+      }
+      function loadRound() {
+        if (round >= rounds.length) return finish();
+        phase = "assembly";
+        shields = 3;
+        slots = [];
+        pumps = 0;
+        stability = 75;
+        $("monster").className = "monster";
+        $("monster").style.setProperty("--monster-pos", monsterPos(round));
+        $("zog").className = "zog";
+        $("reactor").classList.remove("shake");
+        $("liquid").style.setProperty(
+          "--liquid",
+          ["#28e7ff", "#ff1b8d", "#ffdb12", "#a9f928"][round % 4],
+        );
+        $("verb").textContent = rounds[round][0].toUpperCase();
+        let answer = rounds[round][1],
+          letters = answer.split(""),
+          extra = shuffle("qzxvbmnp".split("")).slice(
+            0,
+            Math.max(3, Math.ceil(answer.length / 2)),
+          );
+        caps = shuffle([...letters, ...extra]);
+        renderSlots(answer.length);
+        renderCaps();
+        updateHUD();
+      }
+      function renderSlots(n) {
+        $("slots").innerHTML = Array.from(
+          { length: n },
+          (_, i) =>
+            `<button class="slot ${slots[i] ? "filled" : ""}" onclick="removeSlot(${i})">${slots[i] || ""}</button>`,
+        ).join("");
+      }
+      function renderCaps() {
+        $("capsules").innerHTML = [...caps, ...caps]
+          .map(
+            (c, i) =>
+              `<button class="capsule" onclick="catchCapsule('${c}',this)">${c.toUpperCase()}</button>`,
+          )
+          .join("");
+      }
+      function catchCapsule(c, b) {
+        if (phase !== "assembly" || slots.length >= rounds[round][1].length)
+          return;
+        phase = "grabbing";
+        let r = b.getBoundingClientRect(),
+          claw = $("claw");
+        claw.style.left = r.left + r.width / 2 - 72 + "px";
+        claw.style.bottom = innerHeight - r.bottom + 4 + "px";
+        claw.classList.add("grab");
+        setTimeout(() => {
+          slots.push(c);
+          renderSlots(rounds[round][1].length);
+          b.style.visibility = "hidden";
+          claw.classList.remove("grab");
+          claw.style.left = clawX + "%";
+          claw.style.bottom = "103px";
+          phase = "assembly";
+          sfx(620, 0.12);
+          fx("BLOOP!");
+        }, 330);
+      }
+      function removeSlot(i) {
+        if (phase !== "assembly" || !slots[i]) return;
+        slots.splice(i, 1);
+        renderSlots(rounds[round][1].length);
+        sfx(900, 0.08);
+        fx("ZAP!");
+      }
+      function startReaction() {
+        if (phase !== "assembly" || slots.length !== rounds[round][1].length)
+          return fx("FILL EVERY SLOT!");
+        phase = "checking";
+        $("reactor").classList.add("shake");
+        sfx(130, 0.5);
+        setTimeout(() => {
+          let built = slots.join("");
+          if (built === rounds[round][1]) beginMixing();
+          else failCheck();
+        }, 900);
+      }
+      function failCheck() {
+        shields--;
+        combo = 0;
+        phase = "assembly";
+        $("reactor").classList.add("shake");
+        $("monster").className = "monster show glitch";
+        $("zog").className = "zog worry";
+        fx("REACTION UNSTABLE!");
+        sfx(90, 0.65);
+        if (shields <= 0) setTimeout(() => reveal(false), 900);
+        updateHUD();
+      }
+      function beginMixing() {
+        phase = "mixing";
+        $("reactor").classList.remove("shake");
+        $("monster").className = "monster";
+        fx("FIZZ! MIX IT!");
+        pumps = 0;
+        stability = 62;
+        $("temp").value = 35 + Math.random() * 30;
+        $("pressure").value = 35 + Math.random() * 30;
+        updateStability();
+      }
+      function pump() {
+        if (phase !== "mixing") return;
+        pumps++;
+        $("pressure").value = Math.min(100, +$("pressure").value + 8);
+        stability += 8;
+        sfx(180, 0.16);
+        fx("PUMP!");
+        checkStable();
+      }
+      function releaseSteam() {
+        if (phase !== "mixing") return;
+        $("pressure").value = Math.max(0, +$("pressure").value - 18);
+        stability += 6;
+        sfx(540, 0.22);
+        fx("PSSSH!");
+        checkStable();
+      }
+      function updateStability() {
+        if (phase !== "mixing") return;
+        let t = +$("temp").value,
+          p = +$("pressure").value;
+        stability = Math.max(
+          0,
+          Math.min(
+            100,
+            stability - (Math.abs(t - 55) + Math.abs(p - 55)) * 0.035,
+          ),
+        );
+        $("stable").style.width = stability + "%";
+        $("reactor").classList.toggle("shake", stability < 38);
+        $("zog").className = stability < 38 ? "zog worry" : "zog";
+        checkStable();
+      }
+      function checkStable() {
+        if (
+          phase === "mixing" &&
+          pumps >= 3 &&
+          stability >= 60 &&
+          Math.abs(+$("temp").value - 55) < 24 &&
+          Math.abs(+$("pressure").value - 55) < 24
+        ) {
+          phase = "done";
+          combo++;
+          bestCombo = Math.max(bestCombo, combo);
+          samples++;
+          let gain = 100 + combo * 20 + shields * 15;
+          if (doubleNext) {
+            gain *= 2;
+            doubleNext = false;
+            fx("×2 SCORE!");
+          }
+          score += gain;
+          collected.add(round);
+          localStorage.setItem("mvl-monsters", JSON.stringify([...collected]));
+          renderCollection();
+          $("monster").className = "monster show";
+          fx(combo >= 3 ? "MEGA MIX!" : "STABLE!");
+          sfx(760, 0.55);
+          setTimeout(() => reveal(true), 1000);
+        }
+        updateHUD();
+      }
+      function reveal(ok) {
+        phase = "reveal";
+        $("revealTitle").textContent = ok
+          ? "REACTION SUCCESS!"
+          : "REACTION FAILED";
+        $("answer").innerHTML =
+          `${rounds[round][0].toUpperCase()} → <b>${rounds[round][1].toUpperCase()}</b>`;
+        $("example").textContent = rounds[round][2];
+        $("reveal").classList.add("on");
+      }
+      function nextRound() {
+        $("reveal").classList.remove("on");
+        round++;
+        loadRound();
+      }
+      function fx(t) {
+        $("fx").textContent = t;
+        $("fx").classList.remove("on");
+        void $("fx").offsetWidth;
+        $("fx").classList.add("on");
+      }
+      function updateHUD() {
+        $("score").textContent = score;
+        $("combo").textContent = "×" + combo;
+        $("progress").textContent = Math.min(round + 1, 8) + "/8";
+        $("shields").textContent =
+          "⬟ ".repeat(shields) + "⬡ ".repeat(3 - shields);
+      }
+      function tick() {
+        if (state === "pause") return;
+        time--;
+        let m = Math.floor(time / 60),
+          s = time % 60;
+        $("timer").textContent =
+          `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        if (phase === "mixing") {
+          stability -= 1.6;
+          updateStability();
+        }
+        if (time <= 0) finish();
+      }
+      function pauseGame() {
+        if (state === "pause") return;
+        state = "pause";
+        showScreen("pause");
+        pauseMusic();
+      }
+      function resumeGame() {
+        showScreen("none");
+        state = "play";
+        resumeMusic();
+      }
+      function quitGame() {
+        clearInterval(timer);
+        stopMusic();
+        $("hud").classList.remove("on");
+        state = "start";
+        showScreen("start");
+      }
+      function finish() {
+        clearInterval(timer);
+        stopMusic();
+        state = "finish";
+        $("hud").classList.remove("on");
+        $("finishTitle").textContent =
+          samples >= 6 ? "LAB COMPLETE!" : "SHIFT OVER";
+        $("finishText").textContent =
+          samples + " stable monsters joined your collection.";
+        $("finalScore").textContent = score;
+        $("samples").textContent = samples;
+        $("bestCombo").textContent = bestCombo;
+        $("name").value = localStorage.getItem("mvl-name") || "Scientist";
+        showScreen("finish");
+      }
+      function saveReplay() {
+        let name = ($("name").value.trim() || "Scientist").slice(0, 14),
+          list = JSON.parse(localStorage.getItem("mvl-board") || "[]");
+        localStorage.setItem("mvl-name", name);
+        list.push({ name, score, samples });
+        list.sort((a, b) => b.score - a.score);
+        localStorage.setItem("mvl-board", JSON.stringify(list.slice(0, 10)));
+        showBrief();
+      }
+      function showBoard() {
+        let l = JSON.parse(localStorage.getItem("mvl-board") || "[]");
+        $("board").innerHTML =
+          `<table class="leader"><tr><th>#</th><th>SCIENTIST</th><th>SCORE</th><th>SAMPLES</th></tr>${l.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}</td><td>${r.score}</td><td>${r.samples}</td></tr>`).join("") || '<tr><td colspan="4">NO SAMPLES YET</td></tr>'}</table>`;
+        showScreen("boardScreen");
+      }
+      function renderCollection() {
+        $("collectionStrip").innerHTML = MONSTERS.map(
+          (m, i) =>
+            `<i class="collect-slot ${collected.has(i) ? "got" : ""}" style="--pos:${monsterPos(i)}" title="${m[0]}"></i>`,
+        ).join("");
+        if ($("roomGrid"))
+          $("roomGrid").innerHTML = MONSTERS.map(
+            (m, i) =>
+              `<article class="dossier ${collected.has(i) ? "got" : ""}"><div class="portrait" style="--pos:${monsterPos(i)}"></div><h3>${collected.has(i) ? m[0] : "UNKNOWN"}</h3><p><b>AGE:</b> ${collected.has(i) ? m[1] : "?"}</p><p>${collected.has(i) ? m[2] : "Make a stable reaction to meet this monster."}</p></article>`,
+          ).join("");
+      }
+      function showMonsterRoom() {
+        renderCollection();
+        showScreen("monsterRoom");
+      }
+      function useBooster(type, button) {
+        if (state !== "play" || button.classList.contains("used")) return;
+        if (type === "double") {
+          doubleNext = true;
+          fx("NEXT WORD ×2!");
+        }
+        if (type === "time") {
+          time += 30;
+          fx("+30 SECONDS!");
+        }
+        if (type === "shield") {
+          shields = Math.min(3, shields + 1);
+          fx("SHIELD RESTORED!");
+        }
+        button.classList.add("used");
+        sfx(880, 0.35);
+        updateHUD();
+      }
+      function moveClaw(direction) {
+        if (phase !== "assembly") return;
+        clawX = Math.max(8, Math.min(88, clawX + direction * 5));
+        $("claw").style.left = clawX + "%";
+      }
+      function grabNearest() {
+        if (phase !== "assembly") return;
+        let clawRect = $("claw").getBoundingClientRect(),
+          cx = clawRect.left + clawRect.width / 2,
+          best = null,
+          distance = Infinity;
+        document.querySelectorAll(".capsule").forEach((b) => {
+          if (b.style.visibility === "hidden") return;
+          let r = b.getBoundingClientRect(),
+            d = Math.abs(cx - (r.left + r.width / 2));
+          if (d < distance) {
+            distance = d;
+            best = b;
+          }
+        });
+        if (best) best.click();
+      }
+      function initAudio() {
+        if (audio) return;
+        audio = new (AudioContext || webkitAudioContext)();
+      }
+      function sfx(f, d = 0.12) {
+        if (!sound) return;
+        initAudio();
+        let o = audio.createOscillator(),
+          g = audio.createGain();
+        o.type = "sine";
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.001, audio.currentTime);
+        g.gain.exponentialRampToValueAtTime(
+          0.09 * sfxVolume,
+          audio.currentTime + 0.03,
+        );
+        g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + d);
+        o.connect(g).connect(audio.destination);
+        o.start();
+        o.stop(audio.currentTime + d + 0.03);
+      }
+      function startMusic() {
+        if (!sound || musicVolume === 0) return;
+        initAudio();
+        let beat = 0;
+        musicTimer = setInterval(() => {
+          if (state === "pause") return;
+          let n = [220, 277, 330, 440, 370, 330, 277, 247][beat++ % 8];
+          let o = audio.createOscillator(),
+            g = audio.createGain();
+          o.type = beat % 2 ? "square" : "triangle";
+          o.frequency.value = n;
+          g.gain.setValueAtTime(0.001, audio.currentTime);
+          g.gain.exponentialRampToValueAtTime(
+            0.025 * musicVolume,
+            audio.currentTime + 0.04,
+          );
+          g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.38);
+          o.connect(g).connect(audio.destination);
+          o.start();
+          o.stop(audio.currentTime + 0.4);
+        }, 290);
+      }
+      function stopMusic() {
+        clearInterval(musicTimer);
+        musicTimer = null;
+      }
+      function pauseMusic() {
+        if (audio) audio.suspend();
+      }
+      function resumeMusic() {
+        if (audio) audio.resume();
+        if (!musicTimer) startMusic();
+      }
+      function toggleSound() {
+        sound = !sound;
+        $("sound").textContent = sound ? "♫" : "×";
+        if (!sound) stopMusic();
+        else startMusic();
+      }
+      $("musicVol").oninput = (e) => {
+        musicVolume = e.target.value / 100;
+        localStorage.setItem("mvl-music", e.target.value);
+        $("musicOut").value = e.target.value + "%";
+        if (musicVolume === 0) stopMusic();
+        else if (!musicTimer && state === "play") startMusic();
+      };
+      $("sfxVol").oninput = (e) => {
+        sfxVolume = e.target.value / 100;
+        localStorage.setItem("mvl-sfx", e.target.value);
+        $("sfxOut").value = e.target.value + "%";
+      };
+      $("temp").oninput = updateStability;
+      $("pressure").oninput = updateStability;
+      renderCollection();
+      addEventListener("keydown", (e) => {
+        if (
+          [
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "ArrowDown",
+            "Space",
+            "Backspace",
+          ].includes(e.code)
+        )
+          e.preventDefault();
+        if (e.code === "Backspace" && slots.length)
+          removeSlot(slots.length - 1);
+        if (e.code === "ArrowLeft") moveClaw(-1);
+        if (e.code === "ArrowRight") moveClaw(1);
+        if (e.code === "Space") grabNearest();
+        if (e.code === "Enter") startReaction();
+        if (e.code === "Escape") state === "pause" ? resumeGame() : pauseGame();
+        if (e.key === "w")
+          $("temp").value = Math.min(100, +$("temp").value + 4);
+        if (e.key === "s") $("temp").value = Math.max(0, +$("temp").value - 4);
+        if (e.key === "d")
+          $("pressure").value = Math.min(100, +$("pressure").value + 4);
+        if (e.key === "a")
+          $("pressure").value = Math.max(0, +$("pressure").value - 4);
+        updateStability();
+      });
+    </script>
+  </body>
+</html>

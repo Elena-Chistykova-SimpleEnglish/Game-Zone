@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>ECHO RIFT — Sentence Protocol</title>
+    <style>
+      :root {
+        --cyan: #63eaff;
+        --red: #ff405d;
+        --ink: #05070c;
+        --glass: #07121ddd;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #020409;
+        color: #eafcff;
+        font-family:
+          Segoe UI,
+          Arial,
+          sans-serif;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      .app {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #03060b;
+      }
+      .world {
+        position: absolute;
+        inset: -8% -11%;
+        background: url("echo-rift-environment.png") center/cover;
+        transition: transform 0.12s;
+        filter: saturate(1.08) contrast(1.05);
+      }
+      .world:after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            circle at 50% 48%,
+            transparent 0 28%,
+            #02040a44 62%,
+            #010207e8 100%
+          ),
+          linear-gradient(90deg, #00d9ff12, #ff234518);
+        pointer-events: none;
+      }
+      .fog {
+        position: absolute;
+        inset: 55% -20% -15%;
+        background: radial-gradient(ellipse, #a7efff20, transparent 65%);
+        filter: blur(20px);
+        animation: fog 10s ease-in-out infinite alternate;
+        pointer-events: none;
+      }
+      @keyframes fog {
+        to {
+          transform: translateX(9%) scale(1.1);
+        }
+      }
+      .screen {
+        position: absolute;
+        z-index: 30;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 24px;
+        background:
+          linear-gradient(90deg, #030711ef, #080711c9),
+          url("echo-rift-environment.png") center/cover;
+      }
+      .screen.on {
+        display: grid;
+      }
+      .panel {
+        width: min(920px, 96vw);
+        max-height: 94vh;
+        overflow: auto;
+        padding: clamp(20px, 4vw, 46px);
+        border: 1px solid #72ebff88;
+        background: #040a13e8;
+        box-shadow:
+          0 0 55px #20dfff25,
+          inset 0 0 40px #132b3d;
+        text-align: center;
+        clip-path: polygon(
+          0 12px,
+          12px 0,
+          calc(100% - 12px) 0,
+          100% 12px,
+          100% calc(100% - 12px),
+          calc(100% - 12px) 100%,
+          12px 100%,
+          0 calc(100% - 12px)
+        );
+      }
+      .eyebrow {
+        letter-spacing: 0.45em;
+        color: var(--cyan);
+        font-size: 12px;
+      }
+      .logo {
+        font:
+          900 italic clamp(52px, 9vw, 112px) / 0.75 Impact,
+          Arial Narrow,
+          sans-serif;
+        letter-spacing: 0.03em;
+        margin: 20px 0;
+        text-shadow: 0 0 28px #22dfff88;
+      }
+      .logo span {
+        display: block;
+        color: var(--red);
+        font-size: 0.36em;
+        letter-spacing: 0.3em;
+        margin-top: 17px;
+      }
+      .tag {
+        color: #b7cad5;
+        font-size: 18px;
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 25px;
+      }
+      .btn {
+        border: 1px solid var(--cyan);
+        background: #07131d;
+        color: #eaffff;
+        padding: 13px 24px;
+        min-width: 190px;
+        letter-spacing: 0.1em;
+        font-weight: 800;
+        text-transform: uppercase;
+        cursor: pointer;
+        box-shadow: inset 0 0 18px #34eaff15;
+      }
+      .btn:hover,
+      .btn.primary {
+        background: var(--cyan);
+        color: #031017;
+      }
+      .btn.danger {
+        border-color: var(--red);
+      }
+      .brief {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 24px;
+        text-align: left;
+      }
+      .brief h3 {
+        color: var(--cyan);
+        letter-spacing: 0.12em;
+      }
+      .brief li {
+        margin: 9px 0;
+        color: #cadbe3;
+      }
+      .keys {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .key {
+        border: 1px solid #557080;
+        background: #07111a;
+        padding: 12px;
+      }
+      .key b {
+        color: var(--cyan);
+      }
+      .hud {
+        position: absolute;
+        z-index: 9;
+        inset: 0;
+        pointer-events: none;
+        display: none;
+      }
+      .hud.on {
+        display: block;
+      }
+      .topbar {
+        position: absolute;
+        top: 14px;
+        left: 16px;
+        right: 16px;
+        display: grid;
+        grid-template-columns: 185px 1fr 170px;
+        gap: 14px;
+      }
+      .block,
+      .lockbar {
+        border: 1px solid #5ddfffa0;
+        background: #03101bd8;
+        box-shadow: inset 0 0 18px #1dcfff12;
+        padding: 10px 14px;
+      }
+      .lockbar.complete {
+        border-color: #fff;
+        box-shadow:
+          0 0 18px var(--cyan),
+          inset 0 0 28px #2feaff66;
+        animation: sentenceGlow 1s ease both;
+      }
+      @keyframes sentenceGlow {
+        50% {
+          filter: brightness(1.7);
+          transform: scale(1.015);
+        }
+      }
+      .score {
+        font: 800 25px monospace;
+      }
+      .score small,
+      .timer small {
+        display: block;
+        font: 11px Segoe UI;
+        letter-spacing: 0.2em;
+        color: #8cb3c1;
+      }
+      .score b {
+        color: var(--cyan);
+      }
+      .streak {
+        color: #ff8d9f;
+        font-size: 13px;
+      }
+      .lockbar {
+        text-align: center;
+        min-height: 74px;
+      }
+      .sentence {
+        display: flex;
+        gap: 7px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .slot {
+        min-width: 52px;
+        height: 29px;
+        padding: 4px 9px;
+        border-bottom: 2px solid #58727d;
+        color: #a9c0ca;
+        font-weight: 800;
+      }
+      .slot.locked {
+        border: 1px solid var(--cyan);
+        background: #133141;
+        color: white;
+        box-shadow: 0 0 12px #28dfff66;
+      }
+      .wordprog {
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: #8fabb7;
+        margin-top: 6px;
+      }
+      .timer {
+        text-align: right;
+        font: 800 30px monospace;
+      }
+      .timer.warn {
+        color: var(--red);
+        text-shadow: 0 0 15px red;
+      }
+      .bottom {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+      }
+      .energy {
+        width: 260px;
+      }
+      .energy label {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+      }
+      .meter {
+        height: 13px;
+        border: 1px solid var(--cyan);
+        margin-top: 6px;
+      }
+      .meter i {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, var(--red), var(--cyan));
+        transition: 0.15s;
+      }
+      .mission {
+        font: 700 18px monospace;
+      }
+      .pausebtns {
+        position: absolute;
+        right: 18px;
+        top: 110px;
+        pointer-events: auto;
+      }
+      .iconbtn {
+        border: 1px solid #61e6ff;
+        background: #06131dcc;
+        color: white;
+        width: 44px;
+        height: 42px;
+        margin-left: 7px;
+        cursor: pointer;
+      }
+      .targets {
+        position: absolute;
+        z-index: 5;
+        inset: 100px 0 140px;
+        overflow: hidden;
+      }
+      .carrier {
+        position: absolute;
+        width: 142px;
+        height: 178px;
+        transform: translate(-50%, -50%);
+        cursor: crosshair;
+        filter: drop-shadow(0 0 14px #1fdfff44);
+        will-change: transform, left, top;
+      }
+      .creature {
+        position: absolute;
+        inset: 0;
+        background-image: url("echo-carriers-transparent.png");
+        background-size: 400% 100%;
+        background-position: var(--pos) center;
+        background-repeat: no-repeat;
+        opacity: 1;
+      }
+      .plate {
+        position: absolute;
+        left: 50%;
+        top: 48%;
+        transform: translate(-50%, -50%);
+        min-width: 112px;
+        max-width: 155px;
+        padding: 9px 10px;
+        border: 2px solid #d9fbff;
+        background: #b8f5ffed;
+        color: #07121b;
+        text-align: center;
+        font-weight: 900;
+        font-size: 18px;
+        box-shadow:
+          0 0 18px #63eaff,
+          0 0 4px white;
+        white-space: nowrap;
+      }
+      .carrier.guard .plate {
+        animation: shield 3.4s infinite;
+      }
+      @keyframes shield {
+        0%,
+        65%,
+        100% {
+          filter: none;
+        }
+        72%,
+        88% {
+          filter: brightness(0.38);
+          box-shadow: none;
+        }
+      }
+      .carrier.hit {
+        animation: dissolve 0.42s forwards;
+      }
+      @keyframes dissolve {
+        to {
+          opacity: 0;
+          filter: blur(10px) brightness(3);
+          transform: translate(-50%, -60%) scale(1.3);
+        }
+      }
+      .carrier.wrong {
+        animation: wrong 0.25s 2;
+      }
+      @keyframes wrong {
+        50% {
+          transform: translate(-50%, -50%) skew(8deg);
+          filter: hue-rotate(120deg) drop-shadow(0 0 20px red);
+        }
+      }
+      .crosshair {
+        position: absolute;
+        z-index: 12;
+        left: 50%;
+        top: 50%;
+        width: var(--cross, 38px);
+        height: var(--cross, 38px);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        border: 1px solid #8af3ff;
+        border-radius: 50%;
+        box-shadow: 0 0 12px #3ee8ff;
+      }
+      .crosshair:before,
+      .crosshair:after {
+        content: "";
+        position: absolute;
+        background: #cfffff;
+      }
+      .crosshair:before {
+        left: 50%;
+        top: -8px;
+        width: 1px;
+        height: calc(100% + 16px);
+      }
+      .crosshair:after {
+        top: 50%;
+        left: -8px;
+        height: 1px;
+        width: calc(100% + 16px);
+      }
+      .projector {
+        position: absolute;
+        z-index: 8;
+        left: 50%;
+        bottom: -21%;
+        width: min(610px, 48vw);
+        transform: translateX(-50%);
+        filter: contrast(1.08) drop-shadow(0 0 24px #2fe7ff55);
+        pointer-events: none;
+        transition: 0.08s;
+        clip-path: polygon(0 5%, 100% 2%, 100% 100%, 15% 100%);
+      }
+      .projector.fire {
+        transform: translateX(-50%) translateY(18px) scale(1.015);
+        filter: brightness(1.8) contrast(1.2);
+      }
+      .pulse {
+        position: absolute;
+        z-index: 11;
+        width: 20px;
+        height: 20px;
+        border: 3px solid var(--cyan);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        animation: pulse 0.45s forwards;
+      }
+      @keyframes pulse {
+        to {
+          width: 220px;
+          height: 220px;
+          opacity: 0;
+        }
+      }
+      .toast {
+        position: absolute;
+        z-index: 15;
+        left: 50%;
+        top: 63%;
+        transform: translate(-50%, -50%);
+        font: 900 italic 34px Impact;
+        color: var(--cyan);
+        text-shadow: 0 0 12px #000;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .toast.on {
+        animation: toast 0.8s;
+      }
+      @keyframes toast {
+        20%,
+        65% {
+          opacity: 1;
+          transform: translate(-50%, -70%) scale(1.08);
+        }
+      }
+      .redflash {
+        position: absolute;
+        z-index: 14;
+        inset: 0;
+        pointer-events: none;
+        box-shadow: inset 0 0 100px transparent;
+      }
+      .redflash.on {
+        animation: redflash 0.35s;
+      }
+      @keyframes redflash {
+        50% {
+          box-shadow: inset 0 0 110px #ff234588;
+        }
+      }
+      .settings {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        text-align: left;
+      }
+      .settings label {
+        border: 1px solid #334e5a;
+        padding: 12px;
+      }
+      .settings input,
+      .settings select {
+        width: 100%;
+        margin-top: 8px;
+      }
+      .board {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0;
+        font-size: 14px;
+      }
+      .board th,
+      .board td {
+        padding: 8px;
+        border-bottom: 1px solid #294552;
+      }
+      .board th {
+        color: var(--cyan);
+      }
+      .resultstats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .resultstats div {
+        border: 1px solid #365767;
+        padding: 13px;
+      }
+      .resultstats b {
+        display: block;
+        color: var(--cyan);
+        font-size: 28px;
+      }
+      .name {
+        background: #09151f;
+        color: white;
+        border: 1px solid var(--cyan);
+        padding: 11px;
+        width: 190px;
+      }
+      .mobile {
+        display: none;
+        position: absolute;
+        z-index: 16;
+        inset: auto 14px 18px;
+        justify-content: space-between;
+        pointer-events: none;
+      }
+      .mobile button {
+        pointer-events: auto;
+        border: 1px solid #7ceeff;
+        background: #082233bb;
+        color: white;
+        border-radius: 50%;
+        width: 78px;
+        height: 78px;
+        font-weight: 900;
+      }
+      .stick {
+        pointer-events: auto;
+        width: 105px;
+        height: 105px;
+        border: 1px solid #74eaff;
+        border-radius: 50%;
+        background: #06182588;
+      }
+      .countdown {
+        position: absolute;
+        z-index: 16;
+        inset: 0;
+        display: none;
+        place-items: center;
+        font: 900 18vw Impact;
+        color: #ff405d;
+        text-shadow: 0 0 35px red;
+        pointer-events: none;
+      }
+      .countdown.on {
+        display: grid;
+        animation: blink 0.7s;
+      }
+      @media (max-width: 800px), (pointer: coarse) {
+        .topbar {
+          grid-template-columns: 115px 1fr 105px;
+          gap: 5px;
+          top: 5px;
+          left: 5px;
+          right: 5px;
+        }
+        .block,
+        .lockbar {
+          padding: 6px;
+        }
+        .score,
+        .timer {
+          font-size: 18px;
+        }
+        .slot {
+          min-width: 29px;
+          font-size: 11px;
+          padding: 3px;
+        }
+        .targets {
+          top: 80px;
+        }
+        .projector {
+          width: 72vw;
+        }
+        .mobile {
+          display: flex;
+        }
+        .bottom {
+          bottom: 105px;
+        }
+        .brief {
+          grid-template-columns: 1fr;
+        }
+        .panel {
+          padding: 18px;
+        }
+        .resultstats {
+          grid-template-columns: 1fr 1fr;
+        }
+        .pausebtns {
+          top: 84px;
+        }
+        .carrier {
+          width: 112px;
+          height: 155px;
+        }
+        .plate {
+          font-size: 15px;
+          min-width: 86px;
+        }
+        .energy {
+          width: 160px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" id="app">
+      <div class="world" id="world"></div>
+      <div class="fog"></div>
+      <div class="targets" id="targets"></div>
+      <img
+        class="projector"
+        id="projector"
+        src="echo-projector-fps-transparent.png"
+        alt=""
+      />
+      <div class="crosshair" id="crosshair"></div>
+      <div class="toast" id="toast"></div>
+      <div class="redflash" id="redflash"></div>
+      <div class="countdown" id="countdown"></div>
+      <div class="hud" id="hud">
+        <div class="topbar">
+          <div class="block score">
+            <small>RESONANCE SCORE</small><b id="score">0</b>
+            <div class="streak">STREAK <span id="streak">0</span></div>
+          </div>
+          <div class="lockbar">
+            <div class="sentence" id="sentence"></div>
+            <div class="wordprog" id="wordprog">WORD 1/6</div>
+          </div>
+          <div class="block timer">
+            <small>RIFT COLLAPSE</small><span id="timer">05:00</span>
+          </div>
+        </div>
+        <div class="pausebtns">
+          <button class="iconbtn" onclick="toggleMute()" id="mute">♫</button
+          ><button class="iconbtn" onclick="pauseGame()">Ⅱ</button>
+        </div>
+        <div class="bottom">
+          <div class="energy">
+            <label>PROJECTOR ENERGY</label>
+            <div class="meter"><i id="energy"></i></div>
+          </div>
+          <div class="mission">
+            SEALED <span id="progress">0/10 · SIGNAL 1/15</span>
+          </div>
+        </div>
+      </div>
+      <div class="mobile">
+        <div class="stick" id="stick"></div>
+        <button
+          onpointerdown="stabilizing=true"
+          onpointerup="stabilizing=false"
+        >
+          STABLE</button
+        ><button onclick="shootAt(innerWidth/2,innerHeight/2)">PULSE</button>
+      </div>
+      <section class="screen on" id="start">
+        <div class="panel">
+          <div class="eyebrow">RIFT OPERATOR // A1 PROTOCOL</div>
+          <h1 class="logo">ECHO RIFT<span>SENTENCE PROTOCOL</span></h1>
+          <p class="tag">Lock the words. Seal the rift.</p>
+          <div class="actions">
+            <button class="btn primary" onclick="showBrief()">
+              ENTER THE RIFT</button
+            ><button class="btn" onclick="showBoard()">LEADERBOARD</button
+            ><button class="btn danger" onclick="location.href='../index.html'">
+              BACK TO PLAY ZONE
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="screen" id="brief">
+        <div class="panel">
+          <div class="brief">
+            <div>
+              <div class="eyebrow">MISSION BRIEFING</div>
+              <h2>THE WORD ECHOES ARE OUT OF ORDER</h2>
+              <p>
+                Every creature carries one word. Read all word plates, find the
+                first word of the Past Simple sentence, aim and click it. Then
+                shoot the second word, the third word, and continue from left to
+                right until the sentence is complete. Seal 15 sentences in five
+                minutes.
+              </p>
+              <h3>TRAINING SIGNAL</h3>
+              <p>
+                Example: ALPHA → BETA → GAMMA. First shoot ALPHA, then BETA,
+                then GAMMA. Locked words appear in the bar at the top. A wrong
+                target costs 1 point and stays on screen. Finish all 15
+                sentences before time ends and your final score is doubled.
+              </p>
+            </div>
+            <div>
+              <h3>CONTROLS</h3>
+              <div class="keys">
+                <div class="key"><b>MOUSE</b><br />Aim & look</div>
+                <div class="key"><b>LEFT CLICK</b><br />Fire pulse</div>
+                <div class="key"><b>WASD</b><br />Move</div>
+                <div class="key"><b>SHIFT</b><br />Dash</div>
+                <div class="key"><b>SPACE</b><br />Stabilize</div>
+                <div class="key"><b>ESC</b><br />Pause</div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" onclick="startGame()">
+              START PROTOCOL</button
+            ><button class="btn" onclick="openSettings('brief')">
+              SETTINGS
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="screen" id="pause">
+        <div class="panel">
+          <h2>PROTOCOL PAUSED</h2>
+          <div class="actions">
+            <button class="btn primary" onclick="resumeGame()">CONTINUE</button
+            ><button class="btn" onclick="openSettings('pause')">
+              SETTINGS</button
+            ><button class="btn danger" onclick="quitGame()">
+              ABORT MISSION
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="screen" id="settings">
+        <div class="panel">
+          <h2>OPERATOR SETTINGS</h2>
+          <div class="settings">
+            <label
+              >MOUSE SENSITIVITY<input
+                id="sens"
+                type="range"
+                min="2"
+                max="14"
+                value="7" /></label
+            ><label
+              >AIM ASSIST<select id="assist">
+                <option value="0">OFF</option>
+                <option value="1">LOW</option>
+              </select></label
+            ><label
+              >CROSSHAIR SIZE<input
+                id="crosssize"
+                type="range"
+                min="24"
+                max="58"
+                value="38" /></label
+            ><label
+              >MUSIC VOLUME<input
+                id="musicvol"
+                type="range"
+                min="0"
+                max="100"
+                value="45" /></label
+            ><label
+              >SFX VOLUME<input
+                id="sfxvol"
+                type="range"
+                min="0"
+                max="100"
+                value="70" /></label
+            ><label
+              ><input id="shake" type="checkbox" checked /> CAMERA SHAKE</label
+            ><label
+              ><input id="reduced" type="checkbox" /> REDUCED MOTION</label
+            >
+          </div>
+          <div class="actions">
+            <button class="btn primary" onclick="closeSettings()">
+              SAVE & RETURN
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="screen" id="result">
+        <div class="panel">
+          <div class="eyebrow">MISSION REPORT</div>
+          <h2 id="resultTitle">RIFT SEALED</h2>
+          <div class="resultstats">
+            <div><b id="rscore">0</b>SCORE</div>
+            <div><b id="rclosed">0/10</b>SEALED</div>
+            <div><b id="raccuracy">0%</b>ACCURACY</div>
+            <div><b id="rstreak">0</b>BEST STREAK</div>
+          </div>
+          <p id="resultText"></p>
+          <input
+            class="name"
+            id="name"
+            maxlength="14"
+            value="Operator"
+            aria-label="Operator name"
+          />
+          <div class="actions">
+            <button class="btn primary" onclick="saveAndReplay()">
+              SAVE & PLAY AGAIN</button
+            ><button class="btn" onclick="showBoard()">LEADERBOARD</button
+            ><button class="btn danger" onclick="location.href='../index.html'">
+              BACK TO PLAY ZONE
+            </button>
+          </div>
+        </div>
+      </section>
+      <section class="screen" id="leaderboard">
+        <div class="panel">
+          <h2>RIFT OPERATORS</h2>
+          <div id="board"></div>
+          <button class="btn primary" onclick="showScreen('start')">
+            BACK
+          </button>
+        </div>
+      </section>
+    </main>
+    <script>
+      const MISSION_DURATION_SECONDS = 300,
+        MISSION_SENTENCE_COUNT = 15,
+        MISSION_GOAL = 10,
+        SPEED_BONUS_SECONDS = 8;
+      const BANK = [];
+      const add = (type, text) => BANK.push({ type, words: text.split(" ") });
+      [
+        "Mia opened the old gate yesterday",
+        "We watched a film last night",
+        "Leo found the hidden map yesterday",
+        "They visited the museum on Sunday",
+        "I played football after school",
+        "She climbed the high tower yesterday",
+        "The drone flew over the street",
+        "We heard a strange sound outside",
+        "Mia took the blue key quickly",
+        "They escaped from the dark castle",
+        "I gave my friend the note",
+        "The guard saw a bright light",
+        "She made a new plan yesterday",
+        "We came home before midnight",
+        "Leo bought a small radio",
+        "The bus stopped near the school",
+        "Mia ran across the wet road",
+        "They drank water after the mission",
+        "I read the secret message yesterday",
+        "She left her bag on the roof",
+      ].forEach((x) => add("statement", x));
+      [
+        "Mia didn't open the red door",
+        "We didn't see the creature yesterday",
+        "Leo didn't take the old map",
+        "They didn't visit the castle last night",
+        "I didn't hear the warning signal",
+        "She didn't find the hidden key",
+        "The drone didn't fly over us",
+        "We didn't leave before sunrise",
+        "Mia didn't drink the blue water",
+        "They didn't run into the tunnel",
+        "I didn't make a loud sound",
+        "He didn't give me the code",
+        "The guard didn't come to school",
+        "She didn't buy the strange radio",
+        "We didn't watch the old film",
+      ].forEach((x) => add("negative", x));
+      [
+        "Did Mia find the secret door",
+        "Did they see the red rift",
+        "Did Leo take the blue map",
+        "Did she open the old box",
+        "Did we hear the warning bell",
+        "Did the drone fly over school",
+        "Did you visit the empty cinema",
+        "Did Mia run across the street",
+        "Did they leave before midnight",
+        "Did he give you the key",
+        "Did she make a new signal",
+        "Did we come home yesterday",
+        "Did Leo drink the green water",
+        "Did the bus stop near school",
+        "Did you read the hidden message",
+      ].forEach((x) => add("question", x));
+      BANK.length = 0;
+      [
+        "Ava opened the old gate yesterday",
+        "We watched a funny film last night",
+        "Leo found the hidden map yesterday",
+        "They visited the city museum last Sunday",
+        "I played football after school yesterday",
+        "She climbed the high tower last week",
+        "The drone flew over town yesterday",
+        "We heard a strange sound last night",
+        "Ava took the blue key yesterday",
+        "They escaped from the castle last night",
+        "I gave Ben the note yesterday",
+        "The guard saw a light last night",
+        "She made a new plan yesterday morning",
+        "We came home late last night",
+        "Leo bought a radio two days ago",
+        "The bus stopped near school yesterday",
+        "Ava ran across the road yesterday",
+        "They drank water after class yesterday",
+        "I read the secret message last night",
+        "She left her bag yesterday afternoon",
+      ].forEach((x) => add("statement", x));
+      [
+        "Ava didn't open the door yesterday",
+        "We didn't see the creature last night",
+        "Leo didn't take the map yesterday",
+        "They didn't visit the castle last Sunday",
+        "I didn't hear the bell yesterday",
+        "She didn't find the key last night",
+        "The drone didn't fly yesterday morning",
+        "We didn't leave the town last night",
+        "Ava didn't drink the water yesterday",
+        "They didn't run outside last night",
+        "I didn't make a sound yesterday",
+        "He didn't give me the code yesterday",
+        "The guard didn't come last night",
+        "She didn't buy the radio yesterday",
+        "We didn't watch television last night",
+      ].forEach((x) => add("negative", x));
+      [
+        "Did Ava find the door yesterday",
+        "Did they see the rift last night",
+        "Did Leo take the map yesterday",
+        "Did she open the box yesterday",
+        "Did we hear the bell last night",
+        "Did the drone fly yesterday morning",
+        "Did you visit the cinema last Sunday",
+        "Did Ava run outside yesterday afternoon",
+        "Did they leave town last night",
+        "Did he give you the key yesterday",
+        "Did she make a signal last night",
+        "Did we come home late yesterday",
+        "Did Leo drink water two hours ago",
+        "Did the bus stop here yesterday",
+        "Did you read the message last night",
+      ].forEach((x) => add("question", x));
+      const distract = {
+        opened: ["open", "opens"],
+        watched: ["watch", "watches"],
+        found: ["find", "finds"],
+        visited: ["visit", "visits"],
+        played: ["play", "plays"],
+        climbed: ["climb", "climbs"],
+        flew: ["fly", "flies"],
+        heard: ["hear", "hears"],
+        took: ["take", "takes"],
+        escaped: ["escape", "escapes"],
+        gave: ["give", "gives"],
+        saw: ["see", "sees"],
+        made: ["make", "makes"],
+        came: ["come", "comes"],
+        bought: ["buy", "buys"],
+        stopped: ["stop", "stops"],
+        ran: ["run", "runs"],
+        drank: ["drink", "drinks"],
+        read: ["reads", "reading"],
+        left: ["leave", "leaves"],
+        open: ["opened", "opens"],
+        see: ["saw", "sees"],
+        take: ["took", "takes"],
+        visit: ["visited", "visits"],
+        hear: ["heard", "hears"],
+        find: ["found", "finds"],
+        fly: ["flew", "flies"],
+        leave: ["left", "leaves"],
+        drink: ["drank", "drinks"],
+        run: ["ran", "runs"],
+        make: ["made", "makes"],
+        give: ["gave", "gives"],
+        come: ["came", "comes"],
+        watch: ["watched", "watches"],
+        stop: ["stopped", "stops"],
+      };
+      let state = "start",
+        mission = [],
+        mi = 0,
+        sealed = 0,
+        wi = 0,
+        score = 0,
+        streak = 0,
+        bestStreak = 0,
+        shots = 0,
+        hits = 0,
+        positionAttempt = 1,
+        sentenceErrors = 0,
+        sentenceStart = 0,
+        timeLeft = 300,
+        timerId = null,
+        animId = null,
+        energy = 100,
+        targets = [],
+        mouse = { x: innerWidth / 2, y: innerHeight / 2 },
+        keys = {},
+        pausedFrom = "play",
+        settingsFrom = "brief",
+        stabilizing = false,
+        audio = null,
+        musicTimer = null,
+        muted = false;
+      const $ = (id) => document.getElementById(id),
+        shuffle = (a) => [...a].sort(() => Math.random() - 0.5);
+      function showScreen(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((x) => x.classList.remove("on"));
+        let screen = $(id);
+        if (screen) screen.classList.add("on");
+      }
+      function showBrief() {
+        showScreen("brief");
+      }
+      function pickMission() {
+        let take = (type, n) =>
+          shuffle(BANK.filter((x) => x.type === type)).slice(0, n);
+        return shuffle([
+          ...take("statement", 6),
+          ...take("negative", 5),
+          ...take("question", 4),
+        ]);
+      }
+      function startGame() {
+        initAudio();
+        mission = pickMission();
+        mi = wi = sealed = score = streak = bestStreak = shots = hits = 0;
+        timeLeft = MISSION_DURATION_SECONDS;
+        energy = 100;
+        showScreen("none");
+        $("hud").classList.add("on");
+        state = "play";
+        loadSentence();
+        clearInterval(timerId);
+        timerId = setInterval(tick, 1000);
+        last = performance.now();
+        animId = requestAnimationFrame(loop);
+        startMusic();
+      }
+      function loadSentence() {
+        if (sealed >= MISSION_GOAL) return finish(true);
+        if (mi >= mission.length) return finish(false);
+        wi = 0;
+        positionAttempt = 1;
+        sentenceErrors = 0;
+        sentenceStart = performance.now();
+        spawnTargets();
+        renderHUD();
+      }
+      function spawnTargets() {
+        const s = mission[mi],
+          used = new Set(s.words.map((w) => w.toLowerCase())),
+          extras = [];
+        for (const w of s.words) {
+          let d = distract[w.toLowerCase()];
+          if (d) {
+            for (const z of d)
+              if (!used.has(z) && !extras.includes(z)) {
+                extras.push(z);
+                break;
+              }
+          }
+          if (extras.length === 2) break;
+        }
+        const fallbacks = ["today", "goes", "seeing", "now", "opens"];
+        for (const z of fallbacks)
+          if (extras.length < 2 && !used.has(z)) extras.push(z);
+        const words = shuffle([...s.words, ...extras.slice(0, 2)]),
+          cols = words.length > 8 ? 3 : 4,
+          rows = Math.ceil(words.length / cols);
+        targets = words.map((word, i) => ({
+          word,
+          id: Math.random().toString(36).slice(2),
+          x: 17 + (i % cols) * (66 / Math.max(1, cols - 1)),
+          y:
+            rows === 2
+              ? 25 + Math.floor(i / cols) * 50
+              : 18 + Math.floor(i / cols) * 32,
+          phase: Math.random() * 6.28,
+          speed: 0.45 + Math.random() * 0.55,
+          type: i % 4,
+        }));
+        renderTargets();
+      }
+      function renderTargets() {
+        $("targets").innerHTML = targets
+          .map(
+            (t) =>
+              `<div class="carrier ${t.type === 3 ? "guard" : ""}" data-id="${t.id}" style="left:${t.x}%;top:${t.y}%;--pos:${[0, 33.333, 66.667, 100][t.type]}%"><div class="creature"></div><div class="plate">${t.word}</div></div>`,
+          )
+          .join("");
+      }
+      function shootAt(cx, cy) {
+        if (state !== "play" || energy < 12) return;
+        initAudio();
+        energy -= 12;
+        shots++;
+        $("projector").classList.add("fire");
+        if ($("shake").checked && !$("reduced").checked)
+          $("app").animate(
+            [
+              { transform: "translate(0)" },
+              { transform: "translate(-3px,2px)" },
+              { transform: "translate(0)" },
+            ],
+            120,
+          );
+        setTimeout(() => $("projector").classList.remove("fire"), 90);
+        const p = document.createElement("i");
+        p.className = "pulse";
+        p.style.left = cx + "px";
+        p.style.top = cy + "px";
+        $("app").appendChild(p);
+        setTimeout(() => p.remove(), 460);
+        soundPulse();
+        let best = null,
+          bd = 88;
+        document.querySelectorAll(".carrier").forEach((el) => {
+          let r = el.getBoundingClientRect(),
+            d = Math.hypot(
+              cx - (r.left + r.width / 2),
+              cy - (r.top + r.height / 2),
+            );
+          if (d < bd) {
+            bd = d;
+            best = el;
+          }
+        });
+        if (best) hitTarget(best);
+        else {
+          score--;
+          positionAttempt++;
+          streak = 0;
+          wrongFX();
+        }
+        renderHUD();
+      }
+      function hitTarget(el) {
+        let target = targets.find((t) => t.id === el.dataset.id),
+          need = mission[mi].words[wi];
+        if (target.word === need) {
+          hits++;
+          let pts =
+            positionAttempt === 1
+              ? 5
+              : positionAttempt === 2
+                ? 3
+                : positionAttempt === 3
+                  ? 1
+                  : 0;
+          score += pts;
+          streak++;
+          bestStreak = Math.max(bestStreak, streak);
+          wi++;
+          positionAttempt = 1;
+          el.classList.add("hit");
+          soundGood();
+          toast("WORD LOCKED +" + pts);
+          setTimeout(() => {
+            targets = targets.filter((t) => t.id !== target.id);
+            el.remove();
+            renderHUD();
+            if (wi >= mission[mi].words.length) completeSentence();
+          }, 380);
+        } else {
+          score--;
+          positionAttempt++;
+          sentenceErrors++;
+          streak = 0;
+          el.classList.add("wrong");
+          setTimeout(() => el.classList.remove("wrong"), 550);
+          wrongFX();
+          renderHUD();
+          if (sentenceErrors >= 3) {
+            toast("SIGNAL LOST · SENTENCE NOT COUNTED");
+            sentenceErrors = -999;
+            targets = [];
+            renderTargets();
+            mi++;
+            setTimeout(loadSentence, 950);
+          }
+        }
+      }
+      function completeSentence() {
+        let bonus = 0,
+          label = "SENTENCE SEALED";
+        if (sentenceErrors === 0) {
+          bonus += 5;
+          label = "PERFECT ORDER +5";
+        }
+        if ((performance.now() - sentenceStart) / 1000 <= SPEED_BONUS_SECONDS) {
+          bonus += 10;
+          label += (bonus > 10 ? " · " : "") + "RIFT SPEED +10";
+        }
+        score += bonus;
+        toast(label);
+        soundComplete();
+        sealed++;
+        $("sentence").parentElement.classList.add("complete");
+        mi++;
+        setTimeout(() => {
+          $("sentence").parentElement.classList.remove("complete");
+          loadSentence();
+        }, 1100);
+        renderHUD();
+      }
+      function renderHUD() {
+        let s = mission[mi];
+        $("score").textContent = score;
+        $("streak").textContent = streak;
+        $("progress").textContent =
+          sealed +
+          "/" +
+          MISSION_GOAL +
+          " · SIGNAL " +
+          Math.min(mi + 1, MISSION_SENTENCE_COUNT) +
+          "/" +
+          MISSION_SENTENCE_COUNT;
+        $("energy").style.width = energy + "%";
+        if (!s) return;
+        $("sentence").innerHTML =
+          s.words
+            .map(
+              (w, i) =>
+                `<span class="slot ${i < wi ? "locked" : ""}">${i < wi ? w : "_"}</span>`,
+            )
+            .join("") + `<span>${s.type === "question" ? "?" : "."}</span>`;
+        $("wordprog").textContent =
+          `${s.type.toUpperCase()} · WORD ${Math.min(wi + 1, s.words.length)}/${s.words.length}`;
+      }
+      function tick() {
+        if (state !== "play") return;
+        timeLeft--;
+        let m = Math.floor(timeLeft / 60),
+          s = timeLeft % 60;
+        $("timer").textContent =
+          `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        $("timer").classList.toggle("warn", timeLeft <= 60);
+        if (timeLeft <= 10 && timeLeft > 0) {
+          $("countdown").textContent = timeLeft;
+          $("countdown").classList.add("on");
+          setTimeout(() => $("countdown").classList.remove("on"), 650);
+          soundTick();
+        }
+        if (timeLeft <= 0) finish(false);
+      }
+      let last = 0;
+      function loop(now) {
+        if (state !== "play") return;
+        let dt = Math.min(2, (now - last) / 16.67);
+        last = now;
+        energy = Math.min(100, energy + 0.34 * dt);
+        let mx = (keys.d ? 1 : 0) - (keys.a ? 1 : 0),
+          my = (keys.s ? 1 : 0) - (keys.w ? 1 : 0),
+          dash = keys.shift ? 2.4 : 1;
+        mouse.x = Math.max(0, Math.min(innerWidth, mouse.x + mx * dash * 2));
+        mouse.y = Math.max(0, Math.min(innerHeight, mouse.y + my * dash * 1.4));
+        if ($("assist").value === "1") {
+          let near = null,
+            nd = 150;
+          document.querySelectorAll(".carrier").forEach((el) => {
+            let r = el.getBoundingClientRect(),
+              cx = r.left + r.width / 2,
+              cy = r.top + r.height / 2,
+              d = Math.hypot(mouse.x - cx, mouse.y - cy);
+            if (d < nd) {
+              nd = d;
+              near = { x: cx, y: cy };
+            }
+          });
+          if (near) {
+            mouse.x += (near.x - mouse.x) * 0.025;
+            mouse.y += (near.y - mouse.y) * 0.025;
+          }
+        }
+        $("crosshair").style.left = mouse.x + "px";
+        $("crosshair").style.top = mouse.y + "px";
+        $("world").style.transform =
+          `translate(${(innerWidth / 2 - mouse.x) * 0.021}px,${(innerHeight / 2 - mouse.y) * 0.012}px) scale(1.035)`;
+        targets.forEach((t, i) => {
+          let el = document.querySelector(`[data-id="${t.id}"]`);
+          if (!el) return;
+          let amp = $("reduced").checked ? 2 : stabilizing ? 7 : 24,
+            tv = now * 0.001 * t.speed + t.phase;
+          el.style.marginLeft = Math.sin(tv) * (amp + (i % 3) * 4) + "px";
+          el.style.marginTop =
+            Math.cos(tv * 0.8) * (amp * 0.5 + (i % 2) * 4) + "px";
+        });
+        renderHUD();
+        animId = requestAnimationFrame(loop);
+      }
+      function wrongFX() {
+        $("redflash").classList.add("on");
+        setTimeout(() => $("redflash").classList.remove("on"), 350);
+        soundWrong();
+        toast("-1 SIGNAL ERROR");
+      }
+      function toast(t) {
+        $("toast").textContent = t;
+        $("toast").classList.remove("on");
+        void $("toast").offsetWidth;
+        $("toast").classList.add("on");
+      }
+      function pauseGame() {
+        if (state !== "play") return;
+        state = "pause";
+        pausedFrom = "play";
+        showScreen("pause");
+        pauseAudio();
+      }
+      function resumeGame() {
+        showScreen("none");
+        state = "play";
+        last = performance.now();
+        resumeAudio();
+        animId = requestAnimationFrame(loop);
+      }
+      function quitGame() {
+        clearInterval(timerId);
+        cancelAnimationFrame(animId);
+        stopMusic();
+        $("hud").classList.remove("on");
+        state = "start";
+        showScreen("start");
+      }
+      function finish(won) {
+        if (state === "result") return;
+        state = "result";
+        clearInterval(timerId);
+        cancelAnimationFrame(animId);
+        stopMusic();
+        if (won) score *= 2;
+        $("hud").classList.remove("on");
+        $("resultTitle").textContent = won ? "RIFT SEALED" : "RIFT COLLAPSED";
+        $("rscore").textContent = score;
+        $("rclosed").textContent = sealed + "/" + MISSION_GOAL;
+        $("raccuracy").textContent =
+          (shots ? Math.round((hits / shots) * 100) : 0) + "%";
+        $("rstreak").textContent = bestStreak;
+        $("resultText").textContent = won
+          ? "Ten sentence fractures are stable. Early completion doubled your final score."
+          : "Time expired. Every completed sentence remains sealed.";
+        $("name").value = localStorage.getItem("echo-name") || "Operator";
+        showScreen("result");
+        if (won) {
+          initAudio();
+          [523, 659, 784].forEach((n, i) => tone(n, 0.8, 0.1, i * 0.15));
+        }
+      }
+      function saveScore() {
+        let name = ($("name").value.trim() || "Operator").slice(0, 14),
+          list = JSON.parse(localStorage.getItem("echo-board") || "[]");
+        localStorage.setItem("echo-name", name);
+        list.push({
+          name,
+          score,
+          closed: sealed,
+          accuracy: shots ? Math.round((hits / shots) * 100) : 0,
+          streak: bestStreak,
+          date: new Date().toLocaleDateString(),
+        });
+        list.sort((a, b) => b.score - a.score);
+        localStorage.setItem("echo-board", JSON.stringify(list.slice(0, 10)));
+      }
+      function saveAndReplay() {
+        saveScore();
+        showBrief();
+      }
+      function showBoard() {
+        let list = JSON.parse(localStorage.getItem("echo-board") || "[]");
+        $("board").innerHTML =
+          `<table class="board"><tr><th>#</th><th>OPERATOR</th><th>SCORE</th><th>SEALED</th><th>ACCURACY</th><th>STREAK</th><th>DATE</th></tr>${list.map((r, i) => `<tr><td>${i + 1}</td><td>${r.name}</td><td>${r.score}</td><td>${r.closed}/10</td><td>${r.accuracy}%</td><td>${r.streak}</td><td>${r.date}</td></tr>`).join("") || '<tr><td colspan="7">NO SIGNALS RECORDED</td></tr>'}</table>`;
+        showScreen("leaderboard");
+      }
+      function openSettings(from) {
+        settingsFrom = from;
+        showScreen("settings");
+      }
+      function closeSettings() {
+        localStorage.setItem(
+          "echo-settings",
+          JSON.stringify({
+            sens: $("sens").value,
+            assist: $("assist").value,
+            cross: $("crosssize").value,
+            music: $("musicvol").value,
+            sfx: $("sfxvol").value,
+            shake: $("shake").checked,
+            reduced: $("reduced").checked,
+          }),
+        );
+        document.documentElement.style.setProperty(
+          "--cross",
+          $("crosssize").value + "px",
+        );
+        showScreen(settingsFrom);
+      }
+      function loadSettings() {
+        let s = JSON.parse(localStorage.getItem("echo-settings") || "{}");
+        for (const [k, v] of Object.entries(s)) {
+          let el = $(
+            k === "cross"
+              ? "crosssize"
+              : k === "music"
+                ? "musicvol"
+                : k === "sfx"
+                  ? "sfxvol"
+                  : k,
+          );
+          if (el) typeof v === "boolean" ? (el.checked = v) : (el.value = v);
+        }
+        document.documentElement.style.setProperty(
+          "--cross",
+          $("crosssize").value + "px",
+        );
+      }
+      function initAudio() {
+        if (audio) return;
+        audio = new (AudioContext || webkitAudioContext)();
+      }
+      function tone(f, d = 0.2, v = 0.06, delay = 0, type = "sine") {
+        if (muted) return;
+        initAudio();
+        let o = audio.createOscillator(),
+          g = audio.createGain(),
+          at = audio.currentTime + delay;
+        o.type = type;
+        o.frequency.setValueAtTime(f, at);
+        g.gain.setValueAtTime(0.001, at);
+        g.gain.exponentialRampToValueAtTime(
+          v * ($("sfxvol").value / 100),
+          at + 0.03,
+        );
+        g.gain.exponentialRampToValueAtTime(0.001, at + d);
+        o.connect(g).connect(audio.destination);
+        o.start(at);
+        o.stop(at + d + 0.03);
+      }
+      function soundPulse() {
+        tone(125, 0.22, 0.11, 0, "sawtooth");
+        tone(680, 0.14, 0.05, 0.02);
+      }
+      function soundGood() {
+        tone(520, 0.25, 0.07);
+        tone(780, 0.35, 0.05, 0.08);
+      }
+      function soundWrong() {
+        tone(105, 0.3, 0.09, 0, "triangle");
+      }
+      function soundComplete() {
+        [330, 440, 660].forEach((n, i) => tone(n, 0.65, 0.06, i * 0.1));
+      }
+      function soundTick() {
+        tone(180, 0.12, 0.05);
+      }
+      function startMusic() {
+        if (muted) return;
+        initAudio();
+        let beat = 0;
+        musicTimer = setInterval(() => {
+          if (state !== "play") return;
+          let vol = 0.028 * ($("musicvol").value / 100),
+            root = [55, 65.4, 73.4, 49][Math.floor(beat / 4) % 4];
+          tone(root, 1.8, vol, 0, "triangle");
+          if (beat % 2 === 0) tone(root * 4, 1.1, vol * 0.7, 0.12, "sine");
+          if (streak >= 3 || timeLeft <= 60)
+            tone(root * 2, 0.16, vol * 0.8, 0.2, "square");
+          beat++;
+        }, 580);
+      }
+      function stopMusic() {
+        clearInterval(musicTimer);
+        musicTimer = null;
+      }
+      function pauseAudio() {
+        if (audio) audio.suspend();
+      }
+      function resumeAudio() {
+        if (audio) audio.resume();
+      }
+      function toggleMute() {
+        muted = !muted;
+        $("mute").textContent = muted ? "×" : "♫";
+        if (muted) stopMusic();
+        else if (state === "play") startMusic();
+      }
+      addEventListener("pointermove", (e) => {
+        if (state === "play") {
+          let sens = $("sens").value / 7;
+          mouse.x += (e.clientX - mouse.x) * Math.min(0.42, 0.18 * sens);
+          mouse.y += (e.clientY - mouse.y) * Math.min(0.42, 0.18 * sens);
+        }
+      });
+      $("targets").addEventListener("pointerdown", (e) => {
+        if (e.button === 0) shootAt(e.clientX, e.clientY);
+      });
+      addEventListener("keydown", (e) => {
+        keys[e.key.toLowerCase()] = true;
+        if (e.code === "Space") {
+          e.preventDefault();
+          stabilizing = true;
+        }
+        if (e.key === "Escape")
+          state === "play" ? pauseGame() : state === "pause" ? resumeGame() : 0;
+      });
+      addEventListener("keyup", (e) => {
+        keys[e.key.toLowerCase()] = false;
+        if (e.code === "Space") stabilizing = false;
+      });
+      addEventListener("resize", () => {
+        mouse = { x: innerWidth / 2, y: innerHeight / 2 };
+      });
+      loadSettings();
+    </script>
+  </body>
+</html>
