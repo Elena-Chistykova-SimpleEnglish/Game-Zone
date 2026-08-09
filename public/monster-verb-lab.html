@@ -411,6 +411,12 @@
         margin-top: 8px;
         cursor: pointer;
       }
+      .controls.wrong-ready .phasebtn:last-child {
+        animation: clearPulse .75s infinite alternate;
+      }
+      @keyframes clearPulse {
+        to { box-shadow: 0 0 22px #ff1b8d, inset 0 0 12px #fff8; transform:scale(1.025); }
+      }
       .conveyor {
         position: absolute;
         z-index: 9;
@@ -496,19 +502,28 @@
       }
       .collection-strip {
         position: absolute;
-        z-index: 11;
+        z-index: 12;
         left: 50%;
-        bottom: 126px;
+        top: 5px;
         transform: translateX(-50%);
         display: flex;
-        gap: 5px;
+        align-items: center;
+        gap: 3px;
         background: #061323cc;
         border: 2px solid var(--cyan);
-        padding: 5px;
+        padding: 3px 8px;
+      }
+      .collection-strip::before {
+        content: "MONSTERS " attr(data-count) "/8";
+        color: #fff;
+        white-space: nowrap;
+        font: 13px Arial, sans-serif;
+        font-weight: 900;
+        margin-right: 5px;
       }
       .collect-slot {
-        width: 48px;
-        height: 52px;
+        width: 27px;
+        height: 27px;
         background-image: url("monster-collection.png");
         background-size: 400% 200%;
         background-position: var(--pos);
@@ -545,7 +560,9 @@
         min-height: 220px;
       }
       .dossier .portrait {
-        height: 105px;
+        width: 112px;
+        height: 112px;
+        margin: 0 auto 5px;
         background-image: url("monster-collection.png");
         background-size: 400% 200%;
         background-position: var(--pos);
@@ -556,6 +573,17 @@
       .dossier.got .portrait {
         filter: none;
         opacity: 1;
+      }
+      .monster.glitch {
+        background: url("glitch-monster.png") center / contain no-repeat;
+      }
+      .booster { position: relative; }
+      .booster small {
+        position: absolute;
+        left: 50%; top: 53%; transform: translate(-50%,-50%);
+        width: 72px; padding: 3px 2px; border: 2px solid #fff;
+        background: #07101ee6; color: #fff; font: 700 10px/1.05 Arial,sans-serif;
+        text-shadow: 1px 1px #000; pointer-events:none;
       }
       .dossier h3 {
         margin: 3px 0;
@@ -569,6 +597,23 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 9px;
         margin-top: 12px;
+      }
+      @media (max-width: 850px), (max-height: 760px) {
+        .order { top: 62px; width: min(68vw,560px); }
+        .order b { font-size: clamp(22px,4vw,34px); }
+        .collection-strip { top: 5px; left: 50%; }
+        .collection-strip::before { font-size:10px; }
+        .collect-slot { width:22px; height:22px; }
+        .controls { top: 172px; right: 5px; width: 155px; }
+        .phasebtn { font-size: 13px; padding: 9px 4px; }
+        .zog { display:none; }
+        .room-grid { grid-template-columns:repeat(2,1fr); }
+      }
+      @media (max-width: 520px) {
+        .room-grid { grid-template-columns:1fr; }
+        .flasks { transform:scale(.72); transform-origin:top left; }
+        .order { left:54%; width:72vw; }
+        .collection-strip .collect-slot { display:none; }
       }
       .rule-card {
         border: 3px solid #fff;
@@ -710,13 +755,13 @@
     <main class="lab" id="lab">
       <div class="flasks" aria-label="One-use boosters">
         <button class="booster" onclick="useBooster('double',this)">
-          <i class="flask"></i><small>×2 NEXT WORD</small>
+          <i class="flask"></i><small>×2<br>SCORE</small>
         </button>
         <button class="booster" onclick="useBooster('time',this)">
-          <i class="flask"></i><small>+30 SECONDS</small>
+          <i class="flask"></i><small>+30<br>SECONDS</small>
         </button>
         <button class="booster" onclick="useBooster('shield',this)">
-          <i class="flask"></i><small>+1 SHIELD</small>
+          <i class="flask"></i><small>+1<br>SHIELD</small>
         </button>
       </div>
       <div class="reactor" id="reactor"><i class="liquid" id="liquid"></i></div>
@@ -744,23 +789,11 @@
         <div class="slots" id="slots"></div>
       </div>
       <div class="controls" id="controls">
-        <div class="gauge">
-          TEMPERATURE
-          <input id="temp" type="range" min="0" max="100" value="50" />
-        </div>
-        <div class="gauge">
-          PRESSURE
-          <input id="pressure" type="range" min="0" max="100" value="50" />
-        </div>
-        <div class="gauge">
-          STABILITY
-          <div class="stability"><i id="stable"></i></div>
-        </div>
-        <button class="phasebtn" id="pump" onclick="pump()">PUMP</button
+        <button class="phasebtn" onclick="removeLastLetter()">REMOVE LAST</button
         ><button class="phasebtn" id="react" onclick="startReaction()">
           START REACTION</button
-        ><button class="phasebtn" onclick="releaseSteam()">
-          RELEASE STEAM
+        ><button class="phasebtn" onclick="clearAllLetters()">
+          CLEAR ALL
         </button>
       </div>
       <div class="conveyor"><div class="capsules" id="capsules"></div></div>
@@ -772,7 +805,7 @@
           <p class="tag">Build it. Mix it. Bring it to life!</p>
           <button class="btn primary" onclick="showBrief()">
             ENTER THE LAB</button
-          ><button class="btn" onclick="showBoard()">COLLECTION</button
+          ><button class="btn" onclick="showBoard()">LEADERBOARD</button
           ><button class="btn" onclick="location.href='../index.html'">
             BACK TO PLAY ZONE
           </button>
@@ -792,29 +825,25 @@
                 <b>3. CHECK</b> the whole word with START REACTION. The lab
                 gives no hints before checking.
               </p>
-              <p><b>4. STABILIZE</b> a correct reaction with these controls:</p>
+              <p><b>4. CREATE</b> a monster. A right word makes one random cute monster. A wrong word makes a funny glitch monster.</p>
               <div class="rule-cards">
                 <div class="rule-card">
+                  <strong>REMOVE LAST</strong
+                  ><span>Takes the last letter out of the word.</span>
+                </div>
+                <div class="rule-card">
                   <strong>START REACTION</strong
-                  ><span>Checks the whole word after every slot is full.</span>
+                  ><span>Checks your word and creates a monster.</span>
                 </div>
                 <div class="rule-card">
-                  <strong>PUMP ×3</strong
-                  ><span>Adds pressure and energy. Press it three times.</span>
-                </div>
-                <div class="rule-card">
-                  <strong>RELEASE STEAM</strong
-                  ><span>Lowers pressure when the gauge is too high.</span>
+                  <strong>CLEAR ALL</strong
+                  ><span>Returns every letter and empties all slots.</span>
                 </div>
               </div>
               <p>
-                Move <b>TEMPERATURE</b> and <b>PRESSURE</b> near the middle.
-                Keep <b>STABILITY</b> above 60%.
-              </p>
-              <p>
-                A wrong whole word removes one shield. After three failed
-                checks, the answer and example appear, but no monster is
-                collected.
+                A wrong word removes one shield and makes a glitch monster.
+                Press <b>CLEAR ALL</b> to get a fresh word and new letter balls.
+                A wrong word gives no cute monster.
               </p>
             </div>
             <div>
@@ -822,7 +851,6 @@
               <p><b>ARROWS</b> Move claw</p>
               <p><b>SPACE</b> Grab capsule</p>
               <p><b>BACKSPACE</b> Remove last capsule</p>
-              <p><b>W/S</b> Temperature · <b>A/D</b> Pressure</p>
               <p><b>ENTER</b> Start reaction · <b>ESC</b> Pause</p>
             </div>
           </div>
@@ -877,7 +905,7 @@
       </section>
       <section class="screen" id="boardScreen">
         <div class="panel">
-          <h2>MONSTER COLLECTION</h2>
+          <h2>LEADERBOARD</h2>
           <div id="board"></div>
           <button class="btn primary" onclick="showScreen('start')">
             BACK
@@ -888,7 +916,7 @@
         <div class="panel">
           <h2>MONSTER ROOM</h2>
           <p class="tag">
-            Make stable reactions to unlock every little lab friend.
+            Meet all eight lab friends and read their little dossiers.
           </p>
           <div class="room-grid" id="roomGrid"></div>
           <button class="btn primary" onclick="showBrief()">
@@ -909,6 +937,9 @@
     </main>
     <script>
       const VERBS = [
+        ["babysit", "babysat", "Sam babysat his little brother yesterday."],
+        ["be", "was", "Alex was in the lab yesterday."],
+        ["blow", "blew", "The wind blew past the lab yesterday."],
         ["get", "got", "Ava got a blue flask."],
         ["sit", "sat", "Zog sat near the reactor."],
         ["run", "ran", "The monster ran to the door."],
@@ -933,40 +964,45 @@
         ["break", "broke", "The monster broke the machine."],
         ["find", "found", "Leo found a secret key."],
         ["wear", "wore", "Zog wore his new goggles."],
+        ["come", "came", "Nora came to the lab yesterday."],
+        ["cut", "cut", "Max cut the paper yesterday."],
+        ["do", "did", "I did my homework last night."],
+        ["draw", "drew", "Ruby drew a monster yesterday."],
+        ["dream", "dreamt", "Finn dreamt about space last night."],
+        ["eat", "ate", "Lily ate an apple yesterday."],
+        ["fall", "fell", "A book fell off the shelf yesterday."],
+        ["fly", "flew", "A small drone flew here yesterday."],
+        ["forget", "forgot", "Ollie forgot his bag yesterday."],
+        ["grow", "grew", "The green plant grew last week."],
+        ["have", "had", "We had a science lesson yesterday."],
+        ["hear", "heard", "I heard a funny noise last night."],
+        ["know", "knew", "Eva knew the answer yesterday."],
+        ["learn", "learnt", "Tom learnt a new verb yesterday."],
+        ["lose", "lost", "Kim lost a blue key yesterday."],
+        ["make", "made", "Noah made a paper rocket yesterday."],
+        ["meet", "met", "We met a robot yesterday."],
+        ["put", "put", "I put the flask here yesterday."],
+        ["read", "read", "Ruby read a comic last night."],
+        ["say", "said", "Ben said hello yesterday."],
+        ["see", "saw", "We saw a bright star last night."],
+        ["send", "sent", "Dad sent a message yesterday."],
+        ["spell", "spelt", "Amy spelt the word yesterday."],
+        ["spend", "spent", "Leo spent an hour in the lab yesterday."],
+        ["stand", "stood", "The robot stood by the door yesterday."],
+        ["tell", "told", "Nina told a funny story yesterday."],
+        ["throw", "threw", "Jack threw the ball yesterday."],
+        ["wake up", "wokeup", "Milo woke up early yesterday."],
+        ["win", "won", "Our team won the game yesterday."],
       ];
       const MONSTERS = [
-        ["BUBI", 2, "Bubi likes water games. He can make round blue bubbles."],
-        [
-          "PIX",
-          4,
-          "Pix likes music. She can dance and make funny pink lights.",
-        ],
-        ["SPARK", 1, "Spark likes sunny days. He can light a small dark room."],
-        [
-          "GLOOP",
-          6,
-          "Gloop likes green jelly. He can stretch and reach high shelves.",
-        ],
-        [
-          "MOMO",
-          8,
-          "Momo likes books and quiet rooms. She can fly with her long ears.",
-        ],
-        [
-          "ROCKY",
-          12,
-          "Rocky likes building things. He can carry heavy lab boxes.",
-        ],
-        [
-          "DROP",
-          5,
-          "Drop likes swimming. She can clean the glass tubes with water.",
-        ],
-        [
-          "PUFF",
-          3,
-          "Puff likes warm soup. He can make a little cloud of steam.",
-        ],
+        ["BUBI",2,"Hide and Seek","blueberries","make blue bubbles","Yesterday he swam in the lab pool."],
+        ["PIX",4,"Dance Party","strawberry cake","make pink lights","Yesterday she sang a funny song."],
+        ["SPARK",1,"Tag","bananas","light a dark room","Yesterday he flew around the lab."],
+        ["GLOOP",6,"Treasure Hunt","green jelly","reach high shelves","Yesterday he found a little key."],
+        ["MOMO",8,"Word Game","apple pie","read very fast","Yesterday she read a space comic."],
+        ["ROCKY",12,"Building Blocks","cheese sandwiches","carry heavy boxes","Yesterday he built a small robot."],
+        ["DROP",5,"Water Race","watermelon","clean glass tubes","Yesterday she drew a blue fish."],
+        ["PUFF",3,"Cloud Catch","warm soup","make soft steam","Yesterday he made a tiny cloud."],
       ];
       const monsterPos = (i) =>
         `${[0, 33.333, 66.667, 100][i % 4]}% ${i < 4 ? 0 : 100}%`;
@@ -985,13 +1021,11 @@
         time = 150,
         timer = null,
         phase = "assembly",
-        pumps = 0,
-        stability = 75,
         clawX = 46,
+        monsterOrder = [],
+        wrongPending = false,
         doubleNext = false,
-        collected = new Set(
-          JSON.parse(localStorage.getItem("mvl-monsters") || "[]"),
-        ),
+        collected = new Set(),
         audio = null,
         musicTimer = null,
         sound = true,
@@ -1009,7 +1043,9 @@
       }
       function startGame() {
         initAudio();
-        rounds = shuffle(VERBS).slice(0, 8);
+        rounds = shuffle(VERBS).slice(0, 16);
+        monsterOrder = shuffle(MONSTERS.map((_, i) => i));
+        collected = new Set();
         round = score = combo = bestCombo = samples = 0;
         doubleNext = false;
         document
@@ -1026,14 +1062,14 @@
         loadRound();
       }
       function loadRound() {
-        if (round >= rounds.length) return finish();
+        if (samples >= 8 || round >= rounds.length) return finish();
         phase = "assembly";
+        wrongPending = false;
         shields = 3;
         slots = [];
-        pumps = 0;
-        stability = 75;
         $("monster").className = "monster";
-        $("monster").style.setProperty("--monster-pos", monsterPos(round));
+        $("controls").classList.remove("wrong-ready");
+        $("monster").style.setProperty("--monster-pos", monsterPos(monsterOrder[samples]));
         $("zog").className = "zog";
         $("reactor").classList.remove("shake");
         $("liquid").style.setProperty(
@@ -1084,7 +1120,7 @@
           claw.style.left = clawX + "%";
           claw.style.bottom = "103px";
           phase = "assembly";
-          sfx(620, 0.12);
+          marbleClink();
           fx("BLOOP!");
         }, 330);
       }
@@ -1095,6 +1131,25 @@
         sfx(900, 0.08);
         fx("ZAP!");
       }
+      function removeLastLetter() {
+        if (phase === "assembly" && slots.length) removeSlot(slots.length - 1);
+        else fx("NO LETTER TO REMOVE!");
+      }
+      function clearAllLetters() {
+        if (phase !== "assembly") return;
+        if (wrongPending) {
+          wrongPending = false;
+          round++;
+          fx("NEW WORD!");
+          loadRound();
+          return;
+        }
+        slots = [];
+        renderSlots(rounds[round][1].length);
+        renderCaps();
+        sfx(440, .16);
+        fx("SLOTS CLEARED!");
+      }
       function startReaction() {
         if (phase !== "assembly" || slots.length !== rounds[round][1].length)
           return fx("FILL EVERY SLOT!");
@@ -1103,7 +1158,7 @@
         sfx(130, 0.5);
         setTimeout(() => {
           let built = slots.join("");
-          if (built === rounds[round][1]) beginMixing();
+          if (built === rounds[round][1]) completeReaction();
           else failCheck();
         }, 900);
       }
@@ -1111,67 +1166,20 @@
         shields--;
         combo = 0;
         phase = "assembly";
+        wrongPending = true;
         $("reactor").classList.add("shake");
         $("monster").className = "monster show glitch";
         $("zog").className = "zog worry";
         fx("REACTION UNSTABLE!");
-        sfx(90, 0.65);
-        if (shields <= 0) setTimeout(() => reveal(false), 900);
+        buzzWrong();
+        $("controls").classList.add("wrong-ready");
+        setTimeout(() => fx("PRESS CLEAR ALL FOR A NEW WORD"), 850);
         updateHUD();
       }
-      function beginMixing() {
-        phase = "mixing";
-        $("reactor").classList.remove("shake");
-        $("monster").className = "monster";
-        fx("FIZZ! MIX IT!");
-        pumps = 0;
-        stability = 62;
-        $("temp").value = 35 + Math.random() * 30;
-        $("pressure").value = 35 + Math.random() * 30;
-        updateStability();
-      }
-      function pump() {
-        if (phase !== "mixing") return;
-        pumps++;
-        $("pressure").value = Math.min(100, +$("pressure").value + 8);
-        stability += 8;
-        sfx(180, 0.16);
-        fx("PUMP!");
-        checkStable();
-      }
-      function releaseSteam() {
-        if (phase !== "mixing") return;
-        $("pressure").value = Math.max(0, +$("pressure").value - 18);
-        stability += 6;
-        sfx(540, 0.22);
-        fx("PSSSH!");
-        checkStable();
-      }
-      function updateStability() {
-        if (phase !== "mixing") return;
-        let t = +$("temp").value,
-          p = +$("pressure").value;
-        stability = Math.max(
-          0,
-          Math.min(
-            100,
-            stability - (Math.abs(t - 55) + Math.abs(p - 55)) * 0.035,
-          ),
-        );
-        $("stable").style.width = stability + "%";
-        $("reactor").classList.toggle("shake", stability < 38);
-        $("zog").className = stability < 38 ? "zog worry" : "zog";
-        checkStable();
-      }
-      function checkStable() {
-        if (
-          phase === "mixing" &&
-          pumps >= 3 &&
-          stability >= 60 &&
-          Math.abs(+$("temp").value - 55) < 24 &&
-          Math.abs(+$("pressure").value - 55) < 24
-        ) {
+      function completeReaction() {
+        if (phase === "checking") {
           phase = "done";
+          const rewardMonster = monsterOrder[samples];
           combo++;
           bestCombo = Math.max(bestCombo, combo);
           samples++;
@@ -1182,8 +1190,7 @@
             fx("×2 SCORE!");
           }
           score += gain;
-          collected.add(round);
-          localStorage.setItem("mvl-monsters", JSON.stringify([...collected]));
+          collected.add(rewardMonster);
           renderCollection();
           $("monster").className = "monster show";
           fx(combo >= 3 ? "MEGA MIX!" : "STABLE!");
@@ -1198,7 +1205,7 @@
           ? "REACTION SUCCESS!"
           : "REACTION FAILED";
         $("answer").innerHTML =
-          `${rounds[round][0].toUpperCase()} → <b>${rounds[round][1].toUpperCase()}</b>`;
+          `${rounds[round][0].toUpperCase()} → <b>${rounds[round][1].replace("wokeup","woke up").toUpperCase()}</b>`;
         $("example").textContent = rounds[round][2];
         $("reveal").classList.add("on");
       }
@@ -1216,7 +1223,7 @@
       function updateHUD() {
         $("score").textContent = score;
         $("combo").textContent = "×" + combo;
-        $("progress").textContent = Math.min(round + 1, 8) + "/8";
+        $("progress").textContent = samples + "/8";
         $("shields").textContent =
           "⬟ ".repeat(shields) + "⬡ ".repeat(3 - shields);
       }
@@ -1227,10 +1234,6 @@
           s = time % 60;
         $("timer").textContent =
           `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-        if (phase === "mixing") {
-          stability -= 1.6;
-          updateStability();
-        }
         if (time <= 0) finish();
       }
       function pauseGame() {
@@ -1259,7 +1262,7 @@
         $("finishTitle").textContent =
           samples >= 6 ? "LAB COMPLETE!" : "SHIFT OVER";
         $("finishText").textContent =
-          samples + " stable monsters joined your collection.";
+          samples + " cute monsters joined your reaction track.";
         $("finalScore").textContent = score;
         $("samples").textContent = samples;
         $("bestCombo").textContent = bestCombo;
@@ -1282,6 +1285,7 @@
         showScreen("boardScreen");
       }
       function renderCollection() {
+        $("collectionStrip").dataset.count = collected.size;
         $("collectionStrip").innerHTML = MONSTERS.map(
           (m, i) =>
             `<i class="collect-slot ${collected.has(i) ? "got" : ""}" style="--pos:${monsterPos(i)}" title="${m[0]}"></i>`,
@@ -1289,7 +1293,7 @@
         if ($("roomGrid"))
           $("roomGrid").innerHTML = MONSTERS.map(
             (m, i) =>
-              `<article class="dossier ${collected.has(i) ? "got" : ""}"><div class="portrait" style="--pos:${monsterPos(i)}"></div><h3>${collected.has(i) ? m[0] : "UNKNOWN"}</h3><p><b>AGE:</b> ${collected.has(i) ? m[1] : "?"}</p><p>${collected.has(i) ? m[2] : "Make a stable reaction to meet this monster."}</p></article>`,
+              `<article class="dossier got"><div class="portrait" style="--pos:${monsterPos(i)}"></div><h3>${m[0]}</h3><p><b>AGE:</b> ${m[1]}</p><p><b>FAVORITE GAME:</b> ${m[2]}</p><p><b>FAVORITE FOOD:</b> ${m[3]}</p><p><b>CAN:</b> ${m[4]}.</p><p>${m[5]}</p></article>`,
           ).join("");
       }
       function showMonsterRoom() {
@@ -1357,27 +1361,45 @@
         o.start();
         o.stop(audio.currentTime + d + 0.03);
       }
+      function marbleClink() {
+        if (!sound) return;
+        initAudio();
+        [1320, 1770, 1490].forEach((f,i) => {
+          let o=audio.createOscillator(), g=audio.createGain(), t=audio.currentTime+i*.035;
+          o.type="sine"; o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.82,t+.11);
+          g.gain.setValueAtTime(.001,t); g.gain.exponentialRampToValueAtTime(.07*sfxVolume,t+.008); g.gain.exponentialRampToValueAtTime(.001,t+.16);
+          o.connect(g).connect(audio.destination); o.start(t); o.stop(t+.17);
+        });
+      }
+      function buzzWrong() {
+        if (!sound) return;
+        initAudio();
+        let o=audio.createOscillator(), g=audio.createGain(), t=audio.currentTime;
+        o.type="sawtooth"; o.frequency.setValueAtTime(145,t); o.frequency.exponentialRampToValueAtTime(68,t+.46);
+        g.gain.setValueAtTime(.001,t); g.gain.linearRampToValueAtTime(.045*sfxVolume,t+.03); g.gain.exponentialRampToValueAtTime(.001,t+.48);
+        o.connect(g).connect(audio.destination); o.start(t); o.stop(t+.5);
+      }
       function startMusic() {
-        if (!sound || musicVolume === 0) return;
+        if (!sound || musicVolume === 0 || musicTimer) return;
         initAudio();
         let beat = 0;
+        const tune = [523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,523.25,659.25,880,783.99,587.33,698.46,659.25,587.33];
         musicTimer = setInterval(() => {
           if (state === "pause") return;
-          let n = [220, 277, 330, 440, 370, 330, 277, 247][beat++ % 8];
-          let o = audio.createOscillator(),
-            g = audio.createGain();
-          o.type = beat % 2 ? "square" : "triangle";
-          o.frequency.value = n;
-          g.gain.setValueAtTime(0.001, audio.currentTime);
-          g.gain.exponentialRampToValueAtTime(
-            0.025 * musicVolume,
-            audio.currentTime + 0.04,
-          );
-          g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.38);
-          o.connect(g).connect(audio.destination);
-          o.start();
-          o.stop(audio.currentTime + 0.4);
-        }, 290);
+          let n=tune[beat%tune.length], t=audio.currentTime;
+          [[n,"sine",.026,.38],[n/2,"triangle",.012,.72]].forEach(([f,type,v,d])=>{
+            let o=audio.createOscillator(),g=audio.createGain(); o.type=type;
+            o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.995,t+d);
+            g.gain.setValueAtTime(.001,t); g.gain.exponentialRampToValueAtTime(v*musicVolume,t+.018); g.gain.exponentialRampToValueAtTime(.001,t+d);
+            o.connect(g).connect(audio.destination); o.start(t); o.stop(t+d+.03);
+          });
+          if (beat%4===3) {
+            let o=audio.createOscillator(),g=audio.createGain(); o.type="sine"; o.frequency.value=n*2;
+            g.gain.setValueAtTime(.001,t+.12); g.gain.exponentialRampToValueAtTime(.012*musicVolume,t+.14); g.gain.exponentialRampToValueAtTime(.001,t+.3);
+            o.connect(g).connect(audio.destination); o.start(t+.12); o.stop(t+.32);
+          }
+          beat++;
+        }, 535);
       }
       function stopMusic() {
         clearInterval(musicTimer);
@@ -1408,8 +1430,6 @@
         localStorage.setItem("mvl-sfx", e.target.value);
         $("sfxOut").value = e.target.value + "%";
       };
-      $("temp").oninput = updateStability;
-      $("pressure").oninput = updateStability;
       renderCollection();
       addEventListener("keydown", (e) => {
         if (
@@ -1430,14 +1450,6 @@
         if (e.code === "Space") grabNearest();
         if (e.code === "Enter") startReaction();
         if (e.code === "Escape") state === "pause" ? resumeGame() : pauseGame();
-        if (e.key === "w")
-          $("temp").value = Math.min(100, +$("temp").value + 4);
-        if (e.key === "s") $("temp").value = Math.max(0, +$("temp").value - 4);
-        if (e.key === "d")
-          $("pressure").value = Math.min(100, +$("pressure").value + 4);
-        if (e.key === "a")
-          $("pressure").value = Math.max(0, +$("pressure").value - 4);
-        updateStability();
       });
     </script>
   </body>
