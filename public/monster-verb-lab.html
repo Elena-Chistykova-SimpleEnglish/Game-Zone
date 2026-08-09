@@ -843,7 +843,7 @@
               <p>
                 A wrong word removes one shield and makes a glitch monster.
                 Press <b>CLEAR ALL</b> to get a fresh word and new letter balls.
-                A wrong word gives no cute monster.
+                A wrong word gives no cute monster. Three mistakes end the experiment.
               </p>
             </div>
             <div>
@@ -1027,7 +1027,7 @@
         doubleNext = false,
         collected = new Set(),
         audio = null,
-        musicTimer = null,
+        bgMusic = null,
         sound = true,
         musicVolume = +(localStorage.getItem("mvl-music") ?? 45) / 100,
         sfxVolume = +(localStorage.getItem("mvl-sfx") ?? 70) / 100;
@@ -1047,6 +1047,7 @@
         monsterOrder = shuffle(MONSTERS.map((_, i) => i));
         collected = new Set();
         round = score = combo = bestCombo = samples = 0;
+        shields = 3;
         doubleNext = false;
         document
           .querySelectorAll(".booster")
@@ -1065,7 +1066,6 @@
         if (samples >= 8 || round >= rounds.length) return finish();
         phase = "assembly";
         wrongPending = false;
-        shields = 3;
         slots = [];
         $("monster").className = "monster";
         $("controls").classList.remove("wrong-ready");
@@ -1172,6 +1172,12 @@
         $("zog").className = "zog worry";
         fx("REACTION UNSTABLE!");
         buzzWrong();
+        if (shields <= 0) {
+          phase = "failed";
+          setTimeout(() => finish(), 1100);
+          updateHUD();
+          return;
+        }
         $("controls").classList.add("wrong-ready");
         setTimeout(() => fx("PRESS CLEAR ALL FOR A NEW WORD"), 850);
         updateHUD();
@@ -1380,37 +1386,28 @@
         o.connect(g).connect(audio.destination); o.start(t); o.stop(t+.5);
       }
       function startMusic() {
-        if (!sound || musicVolume === 0 || musicTimer) return;
-        initAudio();
-        let beat = 0;
-        const tune = [523.25,659.25,783.99,659.25,587.33,698.46,880,698.46,523.25,659.25,880,783.99,587.33,698.46,659.25,587.33];
-        musicTimer = setInterval(() => {
-          if (state === "pause") return;
-          let n=tune[beat%tune.length], t=audio.currentTime;
-          [[n,"sine",.026,.38],[n/2,"triangle",.012,.72]].forEach(([f,type,v,d])=>{
-            let o=audio.createOscillator(),g=audio.createGain(); o.type=type;
-            o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.995,t+d);
-            g.gain.setValueAtTime(.001,t); g.gain.exponentialRampToValueAtTime(v*musicVolume,t+.018); g.gain.exponentialRampToValueAtTime(.001,t+d);
-            o.connect(g).connect(audio.destination); o.start(t); o.stop(t+d+.03);
-          });
-          if (beat%4===3) {
-            let o=audio.createOscillator(),g=audio.createGain(); o.type="sine"; o.frequency.value=n*2;
-            g.gain.setValueAtTime(.001,t+.12); g.gain.exponentialRampToValueAtTime(.012*musicVolume,t+.14); g.gain.exponentialRampToValueAtTime(.001,t+.3);
-            o.connect(g).connect(audio.destination); o.start(t+.12); o.stop(t+.32);
-          }
-          beat++;
-        }, 535);
+        if (!sound || musicVolume === 0) return;
+        if (!bgMusic) {
+          bgMusic = new Audio("music_2.mp3");
+          bgMusic.loop = true;
+          bgMusic.preload = "auto";
+        }
+        bgMusic.volume = musicVolume;
+        bgMusic.play().catch(() => {});
       }
       function stopMusic() {
-        clearInterval(musicTimer);
-        musicTimer = null;
+        if (bgMusic) {
+          bgMusic.pause();
+          bgMusic.currentTime = 0;
+        }
       }
       function pauseMusic() {
+        if (bgMusic) bgMusic.pause();
         if (audio) audio.suspend();
       }
       function resumeMusic() {
         if (audio) audio.resume();
-        if (!musicTimer) startMusic();
+        startMusic();
       }
       function toggleSound() {
         sound = !sound;
@@ -1422,8 +1419,9 @@
         musicVolume = e.target.value / 100;
         localStorage.setItem("mvl-music", e.target.value);
         $("musicOut").value = e.target.value + "%";
+        if (bgMusic) bgMusic.volume = musicVolume;
         if (musicVolume === 0) stopMusic();
-        else if (!musicTimer && state === "play") startMusic();
+        else if (state === "play") startMusic();
       };
       $("sfxVol").oninput = (e) => {
         sfxVolume = e.target.value / 100;
